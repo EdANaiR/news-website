@@ -99,8 +99,8 @@ export default function NewsPage() {
           {item.shortDescription || "Açıklama yok"}
         </p>
         <div className="flex flex-wrap gap-2">
-          {item.keywords?.$values?.length > 0 ? (
-            item.keywords.$values.map((keyword: string, index: number) => (
+          {item.keywords?.length > 0 ? (
+            item.keywords.map((keyword: string, index: number) => (
               <Badge
                 key={`${item.newsId}-keyword-${index}`}
                 variant="secondary"

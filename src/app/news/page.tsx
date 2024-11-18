@@ -1,9 +1,7 @@
-import NewsPage from "@/components/admin/newsList";
+// pages/index.tsx
 
-export default function Page() {
-  return (
-    <div>
-      <NewsPage />
-    </div>
-  );
+import { MainContent } from "@/components/site/MainContent";
+
+export default function HomePage() {
+  return <MainContent />;
 }

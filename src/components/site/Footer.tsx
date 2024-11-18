@@ -36,7 +36,10 @@ export const Footer = () => {
           </div>
         </div>
         <div className="mt-8 text-center text-sm">
-          © 2024 HABERLER. Tüm hakları saklıdır.
+          © 2024 GÜNCEL MANŞET. Tüm hakları saklıdır.
+          <Link href="news/privacy-policy" className="ml-2 hover:text-red-400">
+            Gizlilik Politikası
+          </Link>
         </div>
       </div>
     </footer>

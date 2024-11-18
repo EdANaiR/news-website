@@ -12,21 +12,9 @@ export interface Category {
   newsArticles: any | null;
 }
 
-interface CategoryResponse {
-  $id: string;
-  $values: Category[];
-}
-
-export interface CarouselNewsItem {
-  id: string;
-  title: string;
-  imageUrl: string;
-  publishDate: string;
-}
-
 export async function getCategories(): Promise<Category[]> {
   try {
-    const response = await fetch("https://localhost:7045/api/Categories", {
+    const response = await fetch("http://localhost:5142/api/Categories", {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -37,16 +25,17 @@ export async function getCategories(): Promise<Category[]> {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const data: CategoryResponse = await response.json();
-    return data.$values; // Doğrudan $values array'ini döndürüyoruz
+    const data: Category[] = await response.json();
+    return data; // Doğrudan API'den gelen array'i döndürüyoruz
   } catch (error) {
     console.error("Error fetching categories:", error);
     throw error;
   }
 }
+
 export async function getCategory(id: string): Promise<Category> {
   try {
-    const response = await fetch("https://localhost:7045/api/Categories${id}", {
+    const response = await fetch("http://localhost:7045/api/Categories${id}", {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -64,9 +53,45 @@ export async function getCategory(id: string): Promise<Category> {
   }
 }
 
+export interface NewsSummaryDto {
+  newsId: string;
+  title: string;
+  imagePath: string;
+  publishedDate: string;
+  shortDescription: string;
+}
+
+export async function getNewsByCategory(
+  categoryId: string,
+  page: number = 1,
+  pageSize: number = 10
+): Promise<NewsSummaryDto[]> {
+  try {
+    const response = await fetch(
+      `http://localhost:5142/api/News/category/${categoryId}?page=${page}&pageSize=${pageSize}`
+    );
+
+    if (response.status === 404) {
+      console.warn(`No news found for category ${categoryId}`);
+      return [];
+    }
+
+    if (!response.ok) {
+      console.error(`HTTP error! status: ${response.status}`);
+      return [];
+    }
+
+    const data: NewsSummaryDto[] = await response.json();
+    return data;
+  } catch (error) {
+    console.error("There was a problem fetching the news:", error);
+    return [];
+  }
+}
+
 export async function addCategory(category: AddCategoryDto): Promise<Category> {
   try {
-    const response = await fetch("https://localhost:7045/api/Categories", {
+    const response = await fetch("http://localhost:7045/api/Categories", {
       method: "POST",
       headers: {
         Accept: "application/json",
@@ -86,64 +111,31 @@ export async function addCategory(category: AddCategoryDto): Promise<Category> {
   }
 }
 
-export async function getCarouselNews(): Promise<CarouselNewsItem[]> {
-  try {
-    const response = await fetch("https://localhost:7045/api/Carousel");
-    if (!response.ok) {
-      throw new Error("Failed to fetch carousel news");
-    }
-    const data = await response.json();
-    // API'den gelen veriyi doğru formata dönüştürün
-    return Array.isArray(data) ? data : data.$values || [];
-  } catch (error) {
-    console.error("Error fetching carousel news:", error);
-    // Hata durumunda boş bir dizi döndürün
-    return [];
-  }
-}
-
-export async function uploadCarouselNews(
-  newsItem: Omit<CarouselNewsItem, "id" | "imageUrl"> & { image: File }
-): Promise<CarouselNewsItem> {
-  const formData = new FormData();
-
-  formData.append("title", newsItem.title);
-  formData.append("publishDate", newsItem.publishDate);
-  formData.append("image", newsItem.image);
-
-  try {
-    const response = await fetch("https://localhost:7045/api/Carousel", {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Server response:", errorText);
-      throw new Error(
-        `Failed to upload news item: ${response.status} ${response.statusText}`
-      );
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Error in uploadCarouselNews:", error);
-    throw error;
-  }
-}
-
 export interface NewsItem {
   newsId: string;
   title: string;
   shortDescription: string;
   content: string;
-  keywords: {
-    $id: string;
-    $values: string[];
-  };
+  keywords: string[];
   publishedDate?: string;
-  imageUrls: string[];
+  images: ImageItem[];
   categoryId: string;
+}
+
+export interface ImageItem {
+  imageId: string;
+  imagePath: string;
+  title: string;
+}
+
+export interface AddNewsDto {
+  title: string;
+  shortDescription: string;
+  content: string;
+  keywords: string;
+  publishedDate: string;
+  categoryId: string;
+  images: File[];
 }
 
 interface NewsResponse {
@@ -151,14 +143,23 @@ interface NewsResponse {
   $values: NewsItem[];
 }
 
-export async function addNews(newsData: NewsItem): Promise<NewsItem> {
+export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
   try {
-    const response = await fetch("https://localhost:7045/api/News", {
+    const formData = new FormData();
+    formData.append("title", newsData.title);
+    formData.append("shortDescription", newsData.shortDescription);
+    formData.append("content", newsData.content);
+    formData.append("keywords", newsData.keywords);
+    formData.append("publishedDate", newsData.publishedDate);
+    formData.append("categoryId", newsData.categoryId);
+
+    newsData.images.forEach((image, index) => {
+      formData.append(`images`, image);
+    });
+
+    const response = await fetch("http://localhost:7045/api/News", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(newsData),
+      body: formData,
     });
 
     if (!response.ok) {
@@ -174,7 +175,7 @@ export async function addNews(newsData: NewsItem): Promise<NewsItem> {
 
 export async function getNews(): Promise<NewsItem[]> {
   try {
-    const response = await fetch("https://localhost:7045/api/News", {
+    const response = await fetch("http://localhost:7045/api/News", {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -190,5 +191,139 @@ export async function getNews(): Promise<NewsItem[]> {
   } catch (error) {
     console.error("Error fetching news:", error);
     throw error;
+  }
+}
+
+export interface CarouselNewsItem {
+  newsId: string;
+  title: string;
+  imageUrl: string;
+}
+
+export async function getCarouselNews(): Promise<CarouselNewsItem[]> {
+  try {
+    const response = await fetch(`http://localhost:5142/api/News/carousel`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    const carouselItems = data?.$values ?? data;
+
+    if (Array.isArray(carouselItems)) {
+      return carouselItems.map((item: any) => ({
+        newsId: item.newsId,
+        title: item.title,
+        imageUrl: item.imageUrl,
+      }));
+    }
+
+    console.warn("Unexpected data structure for carousel news:", data);
+    return [];
+  } catch (error) {
+    console.error("Error fetching carousel news:", error);
+    return [];
+  }
+}
+
+// Haber detaylarını temsil eden arayüz
+export interface NewsDetailDto {
+  newsId: string;
+  title: string;
+  shortDescription: string;
+  content: string;
+  keywords: string[];
+  publishedDate: string;
+  imagePaths: string[];
+  categoryId: string;
+}
+
+export async function getNewsDetail(
+  newsId: string
+): Promise<NewsDetailDto | null> {
+  try {
+    const response = await fetch(`http://localhost:5142/api/news/${newsId}`, {
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch news detail: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data as NewsDetailDto;
+  } catch (error) {
+    console.error("Error fetching news detail:", error);
+    return null;
+  }
+}
+
+export interface AstrologyNews {
+  newsId: string;
+  title: string;
+  publishedDate: string;
+}
+
+export async function getAstrologyNews(): Promise<AstrologyNews[]> {
+  const response = await fetch("http://localhost:5142/api/News/astroloji-news");
+  if (!response.ok) {
+    throw new Error("Failed to fetch astrology news");
+  }
+  return response.json();
+}
+
+export async function getAstrologyNewsDetail(
+  newsId: string
+): Promise<NewsDetailDto | null> {
+  try {
+    const response = await fetch(
+      `http://localhost:5142/api/News/astroloji-news/${newsId}`,
+      {
+        cache: "no-store",
+      }
+    );
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch astrology news detail: ${response.statusText}`
+      );
+    }
+    const data = await response.json();
+    return data as NewsDetailDto;
+  } catch (error) {
+    console.error("Error fetching astrology news detail:", error);
+    return null;
+  }
+}
+
+export interface BreakingNews {
+  newsId: string;
+  title: string;
+}
+
+export async function getBreakingNews(): Promise<BreakingNews[]> {
+  const response = await fetch("http://localhost:5142/api/News/breaking-news");
+  if (!response.ok) {
+    throw new Error("Failed to fetch astrology news");
+  }
+  return response.json();
+}
+
+export async function getBreakingNewsDetail(
+  newsId: string
+): Promise<NewsDetailDto | null> {
+  try {
+    const response = await fetch(
+      `http://localhost:5142/api/News/breaking-news/${newsId}`,
+      {
+        cache: "no-store",
+      }
+    );
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch astrology news detail: ${response.statusText}`
+      );
+    }
+    const data = await response.json();
+    return data as NewsDetailDto;
+  } catch (error) {
+    console.error("Error fetching astrology news detail:", error);
+    return null;
   }
 }

@@ -1,63 +1,50 @@
 "use client";
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-
+import Image from "next/image";
+import NewsList from "@/components/site/NewsList";
+import HomeAstro from "@/components/site/HomeAstro";
+import HomeBreak from "@/components/site/HomeBreaking";
 import { useEffect, useState } from "react";
-
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   getCategories,
   getCarouselNews,
+  getNewsByCategory,
   Category,
   CarouselNewsItem,
+  NewsItem,
 } from "@/lib/api";
 
-const fallbackCategories: Category[] = [
-  { categoryId: "1", name: "Gündem", newsArticles: null },
-  { categoryId: "2", name: "Ekonomi", newsArticles: null },
-  { categoryId: "3", name: "Spor", newsArticles: null },
-  { categoryId: "4", name: "Teknoloji", newsArticles: null },
-];
+// Base URL for the backend
+const API_BASE_URL = "http://localhost:5142";
 
 export const MainContent = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [carouselNews, setCarouselNews] = useState<CarouselNewsItem[]>([]);
+  const [categoryNews, setCategoryNews] = useState<{
+    [key: string]: NewsItem[];
+  }>({});
   const [isLoading, setIsLoading] = useState(true);
-  const totalSlides = 14;
+  const [newsPerCategory, setNewsPerCategory] = useState(6);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % totalSlides);
-    }, 5000); // Change slide every 5 seconds
-
-    return () => clearInterval(timer);
-  }, []);
+  const [visibleNews, setVisibleNews] = useState<{ [key: string]: number }>({});
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [fetchedCategories, fetchedNews] = await Promise.all([
-          getCategories(),
-          getCarouselNews(),
-        ]);
-        setCategories(fetchedCategories);
-        setCarouselNews(fetchedNews);
+        const fetchedCarouselNews = await getCarouselNews();
+        setCarouselNews(fetchedCarouselNews);
+
+        // Her kategori için haberleri paralel olarak çek
+
+        // Sonuçları categoryNews objesine dönüştür
       } catch (error) {
         console.error("Failed to fetch data:", error);
-        setCategories(fallbackCategories);
       } finally {
         setIsLoading(false);
       }
@@ -68,11 +55,9 @@ export const MainContent = () => {
 
   useEffect(() => {
     if (carouselNews.length === 0) return;
-
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % carouselNews.length);
     }, 5000);
-
     return () => clearInterval(timer);
   }, [carouselNews]);
 
@@ -81,11 +66,13 @@ export const MainContent = () => {
   };
 
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % totalSlides);
+    setCurrentSlide((prev) => (prev + 1) % carouselNews.length);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
+    setCurrentSlide(
+      (prev) => (prev - 1 + carouselNews.length) % carouselNews.length
+    );
   };
 
   if (isLoading) {
@@ -115,7 +102,7 @@ export const MainContent = () => {
         {/* Main Content */}
         <div className="flex-1">
           {/* Main Carousel */}
-          {carouselNews.length > 0 ? (
+          {carouselNews.length > 0 && (
             <div className="relative mb-8">
               <div className="overflow-hidden rounded-lg">
                 <div
@@ -123,21 +110,29 @@ export const MainContent = () => {
                   style={{ transform: `translateX(-${currentSlide * 100}%)` }}
                 >
                   {carouselNews.map((news, index) => (
-                    <div key={news.id} className="w-full flex-shrink-0">
+                    <div key={news.newsId} className="w-full flex-shrink-0">
                       <Card className="relative">
                         <CardContent className="p-0">
-                          <img
-                            src={
-                              news.imageUrl ||
-                              `/placeholder.svg?height=400&width=800&text=Haber+${
-                                index + 1
-                              }`
-                            }
-                            alt={news.title}
-                            className="w-full h-[400px] object-cover"
-                          />
-                          <div className="absolute bottom-0 left-0 right-0 bg-[#ff0000ee] text-white p-4">
-                            <h2 className="text-xl font-bold">{news.title}</h2>
+                          <div className="relative w-full h-[400px]">
+                            <Image
+                              src={`${API_BASE_URL}${news.imageUrl}`}
+                              alt={news.title}
+                              fill
+                              className="object-cover brightness-75"
+                              priority={index === currentSlide}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = `/api/placeholder?text=${encodeURIComponent(
+                                  news.title
+                                )}`;
+                              }}
+                            />
+                            {/* Updated title overlay */}
+                            <div className="absolute bottom-8 left-8 right-8 text-white">
+                              <h2 className="text-3xl font-bold leading-tight text-shadow-lg">
+                                {news.title}
+                              </h2>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -161,81 +156,27 @@ export const MainContent = () => {
                 <ChevronRight className="h-6 w-6" />
               </Button>
 
-              <div className="flex justify-center gap-2 mt-4">
+              {/* Updated pagination style */}
+              <div className="flex justify-center gap-1 mt-4 overflow-x-auto py-2">
                 {carouselNews.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => goToSlide(index)}
-                    className={`w-8 h-8 rounded ${
-                      currentSlide === index
-                        ? "bg-[#ff0000ee] text-white"
-                        : "bg-gray-200 text-gray-600 hover:bg-gray-300"
-                    }`}
+                    className={`min-w-[32px] h-8 flex items-center justify-center text-sm font-medium rounded transition-colors
+                      ${
+                        currentSlide === index
+                          ? "bg-[#ff0000ee] text-white"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
                   >
                     {index + 1}
                   </button>
                 ))}
               </div>
             </div>
-          ) : (
-            <div className="text-center py-8">
-              Carousel haberleri yüklenemedi.
-            </div>
           )}
 
-          {/* Thumbnail News Grid */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            {[...Array(3)].map((_, index) => (
-              <Card key={index} className="overflow-hidden">
-                <CardContent className="p-0">
-                  <img
-                    src={`/placeholder.svg?height=150&width=300&text=Haber`}
-                    alt={`Küçük Haber ${index + 1}`}
-                    className="w-full h-[150px] object-cover"
-                  />
-                  <div className="bg-[#ff0000ee] text-white p-2">
-                    <h3 className="text-sm font-bold">
-                      Alt Haber Başlığı {index + 1}
-                    </h3>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Category Sections */}
-          {categories.map((category, index) => (
-            <div key={category.categoryId}>
-              <h2 className="text-2xl font-bold mb-4">{category.name}</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                {[...Array(6)].map((_, newsIndex) => (
-                  <Card key={newsIndex} className="overflow-hidden">
-                    <img
-                      src={`/placeholder.svg?height=200&width=300&text=${category.name}`}
-                      alt={`${category.name} Haber`}
-                      className="w-full h-40 object-cover"
-                    />
-                    <CardContent className="p-4">
-                      <CardTitle className="mb-2 text-lg">
-                        {category.name} Haberi {newsIndex + 1}
-                      </CardTitle>
-                      <p className="text-sm text-gray-500">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              {/* Inter-category Advertisement */}
-              {index < categories.length - 1 && (
-                <div className="my-8 bg-gray-200 p-4 text-center">
-                  <p className="text-gray-500">
-                    Reklam Alanı - Kategori Arası (728x90)
-                  </p>
-                </div>
-              )}
-            </div>
-          ))}
+          <NewsList />
         </div>
 
         {/* Right Sidebar */}
@@ -245,49 +186,8 @@ export const MainContent = () => {
             <p className="text-gray-500">Reklam Alanı - Skyscraper (300x600)</p>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Son Dakika</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {[...Array(5)].map((_, index) => (
-                  <li key={index} className="flex items-center">
-                    <Badge
-                      variant="destructive"
-                      className="mr-2 bg-[#ff0000ee]"
-                    >
-                      Yeni
-                    </Badge>
-                    <span className="text-sm">
-                      Son dakika haberi {index + 1}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Piyasalar</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2">
-                {[
-                  ["Dolar", "8.45 ₺"],
-                  ["Euro", "10.20 ₺"],
-                  ["Altın", "505.00 ₺"],
-                  ["Bitcoin", "$45,000"],
-                ].map(([currency, value]) => (
-                  <li key={currency} className="flex justify-between">
-                    <span>{currency}</span>
-                    <span className="font-bold">{value}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+          <HomeBreak />
+          <HomeAstro />
         </div>
       </div>
     </main>
