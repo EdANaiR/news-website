@@ -116,7 +116,7 @@ export default function NewsList() {
                 <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 group cursor-pointer border-none">
                   <div className="aspect-[16/9] relative">
                     <Image
-                      src={`http://localhost:5142${newsItem.imagePath}`}
+                      src={`https://localhost:7045${newsItem.imagePath}`}
                       alt={newsItem.title}
                       fill
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

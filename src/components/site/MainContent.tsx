@@ -1,37 +1,23 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import NewsList from "@/components/site/NewsList";
 import HomeAstro from "@/components/site/HomeAstro";
 import HomeBreak from "@/components/site/HomeBreaking";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import {
-  getCategories,
-  getCarouselNews,
-  getNewsByCategory,
-  Category,
-  CarouselNewsItem,
-  NewsItem,
-} from "@/lib/api";
+import { getCarouselNews, CarouselNewsItem } from "@/lib/api";
+import { slugify } from "@/lib/utils";
 
-// Base URL for the backend
-const API_BASE_URL = "http://localhost:5142";
+const API_BASE_URL = "https://localhost:7045";
 
 export const MainContent = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [carouselNews, setCarouselNews] = useState<CarouselNewsItem[]>([]);
-  const [categoryNews, setCategoryNews] = useState<{
-    [key: string]: NewsItem[];
-  }>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [newsPerCategory, setNewsPerCategory] = useState(6);
-
-  const [visibleNews, setVisibleNews] = useState<{ [key: string]: number }>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,12 +25,8 @@ export const MainContent = () => {
       try {
         const fetchedCarouselNews = await getCarouselNews();
         setCarouselNews(fetchedCarouselNews);
-
-        // Her kategori için haberleri paralel olarak çek
-
-        // Sonuçları categoryNews objesine dönüştür
       } catch (error) {
-        console.error("Failed to fetch data:", error);
+        console.error("Failed to fetch carousel news:", error);
       } finally {
         setIsLoading(false);
       }
@@ -99,7 +81,6 @@ export const MainContent = () => {
           />
         </div>
 
-        {/* Main Content */}
         <div className="flex-1">
           {/* Main Carousel */}
           {carouselNews.length > 0 && (
@@ -110,7 +91,11 @@ export const MainContent = () => {
                   style={{ transform: `translateX(-${currentSlide * 100}%)` }}
                 >
                   {carouselNews.map((news, index) => (
-                    <div key={news.newsId} className="w-full flex-shrink-0">
+                    <Link
+                      href={`/news/${news.newsId}/${slugify(news.title)}`}
+                      key={news.newsId}
+                      className="w-full flex-shrink-0"
+                    >
                       <Card className="relative">
                         <CardContent className="p-0">
                           <div className="relative w-full h-[400px]">
@@ -127,7 +112,6 @@ export const MainContent = () => {
                                 )}`;
                               }}
                             />
-                            {/* Updated title overlay */}
                             <div className="absolute bottom-8 left-8 right-8 text-white">
                               <h2 className="text-3xl font-bold leading-tight text-shadow-lg">
                                 {news.title}
@@ -136,7 +120,7 @@ export const MainContent = () => {
                           </div>
                         </CardContent>
                       </Card>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -156,7 +140,6 @@ export const MainContent = () => {
                 <ChevronRight className="h-6 w-6" />
               </Button>
 
-              {/* Updated pagination style */}
               <div className="flex justify-center gap-1 mt-4 overflow-x-auto py-2">
                 {carouselNews.map((_, index) => (
                   <button
@@ -179,7 +162,6 @@ export const MainContent = () => {
           <NewsList />
         </div>
 
-        {/* Right Sidebar */}
         <div className="hidden lg:block space-y-8 w-[300px]">
           {/* Right Advertisement */}
           <div className="bg-gray-200 p-4 text-center h-[600px]">

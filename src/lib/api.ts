@@ -14,7 +14,7 @@ export interface Category {
 
 export async function getCategories(): Promise<Category[]> {
   try {
-    const response = await fetch("http://localhost:5142/api/Categories", {
+    const response = await fetch("https://localhost:7045/api/Categories", {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -35,7 +35,7 @@ export async function getCategories(): Promise<Category[]> {
 
 export async function getCategory(id: string): Promise<Category> {
   try {
-    const response = await fetch("http://localhost:7045/api/Categories${id}", {
+    const response = await fetch("https://localhost:7045/api/Categories${id}", {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -68,7 +68,7 @@ export async function getNewsByCategory(
 ): Promise<NewsSummaryDto[]> {
   try {
     const response = await fetch(
-      `http://localhost:5142/api/News/category/${categoryId}?page=${page}&pageSize=${pageSize}`
+      `https://localhost:7045/api/News/category/${categoryId}?page=${page}&pageSize=${pageSize}`
     );
 
     if (response.status === 404) {
@@ -91,7 +91,7 @@ export async function getNewsByCategory(
 
 export async function addCategory(category: AddCategoryDto): Promise<Category> {
   try {
-    const response = await fetch("http://localhost:7045/api/Categories", {
+    const response = await fetch("https://localhost:7045/api/Categories", {
       method: "POST",
       headers: {
         Accept: "application/json",
@@ -132,7 +132,7 @@ export interface AddNewsDto {
   title: string;
   shortDescription: string;
   content: string;
-  keywords: string;
+  keywords: string[];
   publishedDate: string;
   categoryId: string;
   images: File[];
@@ -149,15 +149,16 @@ export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
     formData.append("title", newsData.title);
     formData.append("shortDescription", newsData.shortDescription);
     formData.append("content", newsData.content);
-    formData.append("keywords", newsData.keywords);
+    const keywordsString = newsData.keywords.join(", ");
+    formData.append("keywords", keywordsString);
     formData.append("publishedDate", newsData.publishedDate);
     formData.append("categoryId", newsData.categoryId);
 
-    newsData.images.forEach((image, index) => {
-      formData.append(`images`, image);
+    newsData.images.forEach((image) => {
+      formData.append(`Images`, image);
     });
 
-    const response = await fetch("http://localhost:7045/api/News", {
+    const response = await fetch("https://localhost:7045/api/News", {
       method: "POST",
       body: formData,
     });
@@ -172,10 +173,9 @@ export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
     throw error;
   }
 }
-
 export async function getNews(): Promise<NewsItem[]> {
   try {
-    const response = await fetch("http://localhost:7045/api/News", {
+    const response = await fetch("https://localhost:7045/api/News", {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -202,7 +202,7 @@ export interface CarouselNewsItem {
 
 export async function getCarouselNews(): Promise<CarouselNewsItem[]> {
   try {
-    const response = await fetch(`http://localhost:5142/api/News/carousel`);
+    const response = await fetch(`https://localhost:7045/api/News/carousel`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -241,7 +241,7 @@ export async function getNewsDetail(
   newsId: string
 ): Promise<NewsDetailDto | null> {
   try {
-    const response = await fetch(`http://localhost:5142/api/news/${newsId}`, {
+    const response = await fetch(`https://localhost:7045/api/news/${newsId}`, {
       cache: "no-store",
     });
     if (!response.ok) {
@@ -262,7 +262,9 @@ export interface AstrologyNews {
 }
 
 export async function getAstrologyNews(): Promise<AstrologyNews[]> {
-  const response = await fetch("http://localhost:5142/api/News/astroloji-news");
+  const response = await fetch(
+    "https://localhost:7045/api/News/astroloji-news"
+  );
   if (!response.ok) {
     throw new Error("Failed to fetch astrology news");
   }
@@ -274,7 +276,7 @@ export async function getAstrologyNewsDetail(
 ): Promise<NewsDetailDto | null> {
   try {
     const response = await fetch(
-      `http://localhost:5142/api/News/astroloji-news/${newsId}`,
+      `https://localhost:7045/api/News/astroloji-news/${newsId}`,
       {
         cache: "no-store",
       }
@@ -298,7 +300,7 @@ export interface BreakingNews {
 }
 
 export async function getBreakingNews(): Promise<BreakingNews[]> {
-  const response = await fetch("http://localhost:5142/api/News/breaking-news");
+  const response = await fetch("https://localhost:7045/api/News/breaking-news");
   if (!response.ok) {
     throw new Error("Failed to fetch astrology news");
   }
@@ -310,7 +312,7 @@ export async function getBreakingNewsDetail(
 ): Promise<NewsDetailDto | null> {
   try {
     const response = await fetch(
-      `http://localhost:5142/api/News/breaking-news/${newsId}`,
+      `https://localhost:7045/api/News/breaking-news/${newsId}`,
       {
         cache: "no-store",
       }

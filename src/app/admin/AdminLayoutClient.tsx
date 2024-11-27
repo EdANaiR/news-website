@@ -21,7 +21,7 @@ const sidebarItems = [
   { icon: Image, label: "Medya", href: "/admin/media" },
 ];
 
-export default function AdminLayout({
+export default function AdminLayoutClient({
   children,
 }: {
   children: React.ReactNode;

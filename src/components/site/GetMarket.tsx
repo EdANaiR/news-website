@@ -16,67 +16,69 @@ export default function Component() {
     {
       id: "dolar",
       name: "DOLAR",
-      value: 34.42,
+      value: 34.54,
       change: 0.25,
       previousValue: 34.17,
     },
     {
       id: "euro",
       name: "EURO",
-      value: 36.35,
+      value: 36.02,
       change: 0.31,
       previousValue: 36.04,
     },
     {
       id: "sterlin",
       name: "STERLİN",
-      value: 43.51,
+      value: 43.28,
       change: -0.18,
       previousValue: 43.69,
     },
     {
       id: "bitcoin",
       name: "BITCOIN",
-      value: 985744.08,
+      value: 3405255.75,
       change: 52.4,
-      previousValue: 985691.68,
+      previousValue: 3405256.87,
     },
     {
       id: "bist",
       name: "BIST 100",
-      value: 9425.65,
+      value: 9450.75,
       change: 40.1,
       previousValue: 9385.55,
     },
     {
       id: "gold",
       name: "GRAM ALTIN",
-      value: 2846.51,
+      value: 3008.32,
       change: 40.43,
       previousValue: 2806.08,
     },
     {
       id: "silver",
       name: "GÜMÜŞ",
-      value: 34.03,
+      value: 34.22,
       change: 0.54,
       previousValue: 33.49,
     },
   ]);
 
-  // Simulating real-time updates
   useEffect(() => {
     const interval = setInterval(() => {
       setData((currentData) =>
-        currentData.map((item) => ({
-          ...item,
-          previousValue: item.value,
-          value: item.value + (Math.random() - 0.5) * 0.1,
-          change:
-            ((item.value + (Math.random() - 0.5) * 0.1 - item.previousValue) /
-              item.previousValue) *
-            100,
-        }))
+        currentData.map((item) => {
+          const changeAmount = (Math.random() - 0.5) * 0.02;
+          const newValue = item.value + changeAmount;
+
+          return {
+            ...item,
+            previousValue: item.value,
+            value: newValue,
+            change:
+              ((newValue - item.previousValue) / item.previousValue) * 100,
+          };
+        })
       );
     }, 3000);
 
@@ -111,7 +113,7 @@ export default function Component() {
             </div>
           </div>
         ))}
-        {/* Duplicate items for seamless loop */}
+
         {data.map((item) => (
           <div
             key={`${item.id}-duplicate`}

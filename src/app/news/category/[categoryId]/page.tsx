@@ -8,7 +8,7 @@ interface PageProps {
 
 async function getNewsByCategory(categoryId: string) {
   const response = await fetch(
-    `http://localhost:5142/api/News/category/${categoryId}`
+    `https://localhost:7045/api/News/category/${categoryId}`
   );
   if (!response.ok) {
     throw new Error("Failed to fetch news");

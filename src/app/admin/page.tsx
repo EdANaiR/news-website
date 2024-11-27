@@ -1,9 +1,12 @@
 import AddNewsPage from "@/components/admin/addNews";
 
-export default function Page() {
+export default function NewsPage() {
   return (
-    <div className="flex gap-4">
-      <AddNewsPage />
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">Haberler</h1>
+      <div className="bg-white shadow-sm rounded-lg p-6">
+        <AddNewsPage />
+      </div>
     </div>
   );
 }

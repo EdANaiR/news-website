@@ -1,19 +1,40 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   reactStrictMode: true,
   images: {
-    domains: ["localhost"],
+    domains: ["guncelmanset.com.tr"],
     remotePatterns: [
       {
-        protocol: "http",
-        hostname: "localhost",
-        port: "5142",
+        protocol: "https",
+        hostname: "guncelmanset.com.tr",
         pathname: "/**",
       },
     ],
   },
-  experimental: {
-    appDir: true,
+  async rewrites() {
+    return [
+      {
+        source: "/news/:newsId",
+        destination: "/news/:newsId/title",
+      },
+    ];
+  },
+
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+        ],
+      },
+    ];
   },
 };
 

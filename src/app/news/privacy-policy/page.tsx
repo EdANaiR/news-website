@@ -37,11 +37,6 @@ export default function PrivacyPolicy() {
             <p>Bilgileri aşağıdaki yöntemlerle topluyoruz:</p>
             <ul className="list-disc list-inside ml-4">
               <li>
-                <strong>Çerezler (Cookies):</strong> Sitemiz, kullanıcı
-                deneyimini iyileştirmek ve site kullanımını analiz etmek için
-                çerezler kullanmaktadır.
-              </li>
-              <li>
                 <strong>Sunucu Günlükleri:</strong> Sunucularımız, Sitemize
                 yapılan her ziyareti otomatik olarak kaydeder.
               </li>
@@ -57,7 +52,7 @@ export default function PrivacyPolicy() {
                 href="https://policies.google.com/technologies/ads"
                 className="text-blue-600 hover:underline"
               >
-                Google'ın gizlilik politikasını
+                Googlenin gizlilik politikasını
               </a>{" "}
               inceleyebilirsiniz.
             </p>

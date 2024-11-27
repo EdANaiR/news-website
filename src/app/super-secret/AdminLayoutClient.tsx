@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -12,7 +12,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
@@ -21,24 +21,38 @@ const sidebarItems = [
   { icon: Image, label: "Medya", href: "/admin/media" },
 ];
 
-export default function AdminLayout({
+export default function AdminLayoutClient({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const { data: session, status } = useSession();
   const router = useRouter();
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/admin/login");
+    }
+  }, [status, router]);
 
   const handleLogout = async () => {
     await signOut({ redirect: false });
     router.push("/admin/login");
   };
 
-  const getPageTitle = () => {
-    const item = sidebarItems.find((item) => item.href === pathname);
-    return item ? item.label : "Admin Panel";
-  };
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        Yükleniyor...
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return null;
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -80,18 +94,16 @@ export default function AdminLayout({
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="flex h-16 items-center justify-between px-4 bg-gray-900 text-white">
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden mr-2"
-            >
-              <Menu />
-            </Button>
-            <h2 className="text-xl font-semibold">{getPageTitle()}</h2>
-          </div>
-          <div className="ml-auto">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden"
+          >
+            <Menu />
+          </Button>
+          <div className="ml-auto flex items-center">
+            <span className="mr-4">{session?.user?.name}</span>
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Çıkış Yap

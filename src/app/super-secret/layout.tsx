@@ -2,17 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import {
-  Newspaper,
-  LayoutDashboard,
-  Users,
-  Image,
-  Menu,
-  LogOut,
-} from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Newspaper, LayoutDashboard, Users, Image, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { signOut } from "next-auth/react";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
@@ -28,17 +20,6 @@ export default function AdminLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    await signOut({ redirect: false });
-    router.push("/admin/login");
-  };
-
-  const getPageTitle = () => {
-    const item = sidebarItems.find((item) => item.href === pathname);
-    return item ? item.label : "Admin Panel";
-  };
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -80,22 +61,16 @@ export default function AdminLayout({
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="flex h-16 items-center justify-between px-4 bg-gray-900 text-white">
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden mr-2"
-            >
-              <Menu />
-            </Button>
-            <h2 className="text-xl font-semibold">{getPageTitle()}</h2>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden"
+          >
+            <Menu />
+          </Button>
           <div className="ml-auto">
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Çıkış Yap
-            </Button>
+            {/* Add user profile or logout button here */}
           </div>
         </header>
 

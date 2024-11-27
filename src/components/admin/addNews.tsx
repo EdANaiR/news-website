@@ -22,8 +22,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Upload, X } from "lucide-react";
-import { Category, getCategories, addNews, NewsItem } from "@/lib/api";
+import { CalendarIcon, Upload, X } from "lucide-react";
+import { Category, getCategories, addNews, AddNewsDto } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 
 export default function AddNewsPage() {
@@ -76,7 +76,10 @@ export default function AddNewsPage() {
   const addKeyword = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && keywordInput.trim() !== "") {
       e.preventDefault();
-      setKeywords((prev) => [...prev, keywordInput.trim()]);
+      const newKeyword = keywordInput.trim().startsWith("#")
+        ? keywordInput.trim()
+        : `#${keywordInput.trim()}`;
+      setKeywords((prev) => [...prev, newKeyword]);
       setKeywordInput("");
     }
   };
@@ -97,26 +100,14 @@ export default function AddNewsPage() {
       return;
     }
 
-    const imageUrls = await Promise.all(
-      images.map(async (image) => {
-        // Here you would typically upload the image to your server or a cloud storage service
-        // and return the URL. For this example, we'll just use a placeholder URL.
-        return URL.createObjectURL(image);
-      })
-    );
-
-    const newsData: NewsItem = {
-      newsId: crypto.randomUUID(),
+    const newsData: AddNewsDto = {
       title,
       shortDescription,
       content,
-      keywords: {
-        $id: crypto.randomUUID(),
-        $values: keywords,
-      },
+      keywords,
       publishedDate: date.toISOString(),
-      imageUrls,
       categoryId: selectedCategory,
+      images,
     };
 
     try {
@@ -126,7 +117,6 @@ export default function AddNewsPage() {
         description: "Haber başarıyla eklendi.",
       });
 
-      // Form alanlarını temizle
       setTitle("");
       setShortDescription("");
       setContent("");
@@ -143,7 +133,6 @@ export default function AddNewsPage() {
       });
     }
   };
-
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Yeni Haber Ekle</h1>
