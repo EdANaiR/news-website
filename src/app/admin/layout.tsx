@@ -42,7 +42,6 @@ export default function AdminLayout({
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
       <aside
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -77,7 +76,6 @@ export default function AdminLayout({
         </nav>
       </aside>
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="flex h-16 items-center justify-between px-4 bg-gray-900 text-white">
           <div className="flex items-center">

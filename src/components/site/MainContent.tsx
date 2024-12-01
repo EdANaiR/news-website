@@ -9,14 +9,18 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getCarouselNews, CarouselNewsItem } from "@/lib/api";
+import {
+  getCarouselNews,
+  CarouselNewsItem,
+  defaultCarouselNews,
+} from "@/lib/api";
 import { slugify } from "@/lib/utils";
 
 const API_BASE_URL = "https://localhost:7045";
 
-export const MainContent = () => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [carouselNews, setCarouselNews] = useState<CarouselNewsItem[]>([]);
+const useCarouselNews = () => {
+  const [carouselNews, setCarouselNews] =
+    useState<CarouselNewsItem[]>(defaultCarouselNews);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -27,6 +31,7 @@ export const MainContent = () => {
         setCarouselNews(fetchedCarouselNews);
       } catch (error) {
         console.error("Failed to fetch carousel news:", error);
+        console.warn("Using default carousel news due to API error");
       } finally {
         setIsLoading(false);
       }
@@ -34,6 +39,13 @@ export const MainContent = () => {
 
     fetchData();
   }, []);
+
+  return { carouselNews, isLoading };
+};
+
+export const MainContent = () => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const { carouselNews, isLoading } = useCarouselNews();
 
   useEffect(() => {
     if (carouselNews.length === 0) return;
@@ -72,7 +84,7 @@ export const MainContent = () => {
       </div>
 
       <div className="flex gap-4">
-        {/* Left Advertisement */}
+        {/* Sol Reklam */}
         <div className="hidden lg:block w-[160px] h-[600px] bg-gray-200">
           <img
             src="/placeholder.svg?height=600&width=160&text=Ad"
@@ -82,7 +94,7 @@ export const MainContent = () => {
         </div>
 
         <div className="flex-1">
-          {/* Main Carousel */}
+          {/* Carousel */}
           {carouselNews.length > 0 && (
             <div className="relative mb-8">
               <div className="overflow-hidden rounded-lg">
@@ -100,7 +112,7 @@ export const MainContent = () => {
                         <CardContent className="p-0">
                           <div className="relative w-full h-[400px]">
                             <Image
-                              src={`${API_BASE_URL}${news.imageUrl}`}
+                              src={news.imageUrl}
                               alt={news.title}
                               fill
                               className="object-cover brightness-75"
@@ -163,7 +175,7 @@ export const MainContent = () => {
         </div>
 
         <div className="hidden lg:block space-y-8 w-[300px]">
-          {/* Right Advertisement */}
+          {/* Reklam Alanı */}
           <div className="bg-gray-200 p-4 text-center h-[600px]">
             <p className="text-gray-500">Reklam Alanı - Skyscraper (300x600)</p>
           </div>

@@ -27,7 +27,8 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "src/components/site"
+    "src/components/site",
+    "src/lib/imageLoader.ts"
   ],
   "exclude": ["node_modules"]
 }

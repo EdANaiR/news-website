@@ -21,20 +21,13 @@ export default function NewsList() {
     }[]
   >([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     const fetchCategoriesAndNews = async () => {
       try {
         setIsLoading(true);
-        setError(null);
         const categories = await getCategories();
-
-        if (!categories || categories.length === 0) {
-          setError("No categories found");
-          return;
-        }
 
         const results = await Promise.all(
           categories.map(async (category) => {
@@ -58,10 +51,7 @@ export default function NewsList() {
           setCategoriesWithNews(categoriesWithNewsFiltered);
         }
       } catch (error) {
-        if (isMounted) {
-          console.error("Error fetching data:", error);
-          setError("Failed to fetch data. Please try again later.");
-        }
+        console.error("Error fetching data:", error);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -77,24 +67,31 @@ export default function NewsList() {
   }, []);
 
   if (isLoading) {
-    return <div className="text-center py-4">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center py-4 text-red-500">{error}</div>;
+    return <div className="text-center py-4">Yükleniyor...</div>;
   }
 
   if (categoriesWithNews.length === 0) {
     return (
-      <div className="text-center py-4">No news found for any category.</div>
+      <div className="text-center py-4">
+        Hiçbir kategori için haber bulunamadı.
+      </div>
     );
   }
+
+  const getImageSrc = (imagePath: string) => {
+    if (imagePath.startsWith("http") || imagePath.startsWith("https")) {
+      return imagePath;
+    } else if (imagePath.startsWith("/")) {
+      return imagePath;
+    } else {
+      return `https://localhost:7045${imagePath}`;
+    }
+  };
 
   return (
     <div className="space-y-12">
       {categoriesWithNews.map((item, index) => (
         <div key={item.category.categoryId}>
-          {/* Category Header */}
           <div className="flex items-center justify-between py-3 border-b-2 border-red-600 mb-6">
             <h2 className="text-3xl font-bold">{item.category.name}</h2>
             <Link
@@ -105,7 +102,6 @@ export default function NewsList() {
             </Link>
           </div>
 
-          {/* News Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {item.news.slice(0, 6).map((newsItem, newsIndex) => (
               <Link
@@ -116,7 +112,7 @@ export default function NewsList() {
                 <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 group cursor-pointer border-none">
                   <div className="aspect-[16/9] relative">
                     <Image
-                      src={`https://localhost:7045${newsItem.imagePath}`}
+                      src={getImageSrc(newsItem.imagePath)}
                       alt={newsItem.title}
                       fill
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -152,7 +148,7 @@ export default function NewsList() {
             ))}
           </div>
 
-          {/* Advertisement Section */}
+          {/* Reklam Alanı */}
           {index < categoriesWithNews.length - 1 && (
             <div className="mt-12">
               <div className="bg-gray-100 rounded-lg p-6 text-center">

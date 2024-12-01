@@ -13,7 +13,8 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "guncelmanset.com.tr",
+        hostname: "localhost",
+        port: "7045",
         pathname: "/**",
       },
     ],

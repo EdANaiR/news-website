@@ -20,6 +20,49 @@ interface NewsDetailProps {
   categoryId?: string;
 }
 
+const defaultRelatedNews: NewsSummaryDto[] = [
+  {
+    newsId: "gundem-1",
+    title: "Cumhurbaşkanı Erdoğan, Yeni Yatırım Projesini Açıkladı",
+    imagePath: "/default23.webp",
+    publishedDate: new Date().toISOString(),
+    shortDescription:
+      "Cumhurbaşkanı Erdoğan, Türkiye'deki istihdamı artırmayı amaçlayan yeni yatırım projelerini duyurdu.",
+  },
+  {
+    newsId: "gundem-2",
+    title: "Türkiye'nin En Büyük Havaalanı İçin Çalışmalar Başladı",
+    imagePath: "/default24.jpg",
+    publishedDate: new Date().toISOString(),
+    shortDescription:
+      "Yeni havaalanı projesi, Türkiye'nin ulaşım altyapısındaki büyük dönüşüm için önemli bir adım.",
+  },
+  {
+    newsId: "gundem-3",
+    title: "İstanbul'da Yeni Deprem Tatbikatı Yapıldı",
+    imagePath: "/default25.jpg",
+    publishedDate: new Date().toISOString(),
+    shortDescription:
+      "İstanbul'da olası bir deprem felaketi için büyük çapta bir tatbikat gerçekleştirildi.",
+  },
+  {
+    newsId: "gundem-4",
+    title: "Yeni Eğitim Yılı İçin Bakanlık'tan Önemli Açıklama",
+    imagePath: "/default26.jpg",
+    publishedDate: new Date().toISOString(),
+    shortDescription:
+      "Milli Eğitim Bakanlığı, yeni eğitim yılının başında alınacak önlemleri duyurdu.",
+  },
+  {
+    newsId: "gundem-5",
+    title: "Bakanlık, Çiftçilere Yeni Destek Paketini Açıkladı",
+    imagePath: "/default27.jpg",
+    publishedDate: new Date().toISOString(),
+    shortDescription:
+      "Tarım ve Orman Bakanlığı, çiftçilere yönelik yeni destek paketini duyurdu.",
+  },
+];
+
 export default function NewsDetail({
   initialData,
   categoryId,
@@ -27,7 +70,8 @@ export default function NewsDetail({
   const [newsItems, setNewsItems] = useState<
     (NewsDetailDto | NewsSummaryDto)[]
   >(Array.isArray(initialData) ? initialData : [initialData]);
-  const [relatedNews, setRelatedNews] = useState<NewsSummaryDto[]>([]);
+  const [relatedNews, setRelatedNews] =
+    useState<NewsSummaryDto[]>(defaultRelatedNews);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
@@ -38,8 +82,15 @@ export default function NewsDetail({
 
   const loadRelatedNews = useCallback(async () => {
     if (!categoryId) return;
-    const related = await getNewsByCategory(categoryId);
-    setRelatedNews(related.slice(0, 5));
+    try {
+      const related = await getNewsByCategory(categoryId);
+      if (related && related.length > 0) {
+        setRelatedNews(related.slice(0, 5));
+      }
+    } catch (error) {
+      console.error("Error loading related news:", error);
+      // Hata durumunda varsayılan haberleri kullanmaya devam et
+    }
   }, [categoryId]);
 
   useEffect(() => {
@@ -89,6 +140,16 @@ export default function NewsDetail({
       loadMoreNews();
     }
   }, [inView, loadMoreNews]);
+
+  const getImageSrc = (imagePath: string) => {
+    if (imagePath.startsWith("http") || imagePath.startsWith("https")) {
+      return imagePath;
+    } else if (imagePath.startsWith("/")) {
+      return imagePath;
+    } else {
+      return `https://localhost:7045${imagePath}`;
+    }
+  };
 
   const renderNewsItem = useCallback(
     (item: NewsDetailDto | NewsSummaryDto, index: number) => (
@@ -144,7 +205,7 @@ export default function NewsDetail({
           item.imagePaths.length > 0 && (
             <div className="relative w-full aspect-video mb-6">
               <Image
-                src={`https://localhost:7045${item.imagePaths[0]}`}
+                src={getImageSrc(item.imagePaths[0])}
                 alt={item.title}
                 fill
                 className="object-cover rounded-lg"
@@ -156,7 +217,7 @@ export default function NewsDetail({
         {"imagePath" in item && (
           <div className="relative w-full aspect-video mb-6">
             <Image
-              src={`https://localhost:7045${item.imagePath}`}
+              src={getImageSrc(item.imagePath)}
               alt={item.title}
               fill
               className="object-cover rounded-lg"
@@ -176,7 +237,7 @@ export default function NewsDetail({
               {item.imagePaths.slice(1).map((imagePath, imgIndex) => (
                 <div key={imgIndex} className="relative w-full aspect-video">
                   <Image
-                    src={`https://localhost:7045${imagePath}`}
+                    src={getImageSrc(imagePath)}
                     alt={`${item.title} - Image ${imgIndex + 2}`}
                     fill
                     className="object-cover rounded-lg"
@@ -267,7 +328,7 @@ export default function NewsDetail({
                 >
                   <div className="relative w-full aspect-[16/9]">
                     <Image
-                      src={`https://localhost:7045${news.imagePath}`}
+                      src={getImageSrc(news.imagePath)}
                       alt={news.title}
                       fill
                       className="object-cover rounded-sm"
