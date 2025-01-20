@@ -147,7 +147,7 @@ export default function NewsDetail({
     } else if (imagePath.startsWith("/")) {
       return imagePath;
     } else {
-      return `https://localhost:7045${imagePath}`;
+      return `https://newsapi-nxxa.onrender.com${imagePath}`;
     }
   };
 

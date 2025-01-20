@@ -9,13 +9,12 @@ const nextConfig = {
   },
   reactStrictMode: true,
   images: {
-    domains: ["guncelmanset.com.tr"],
+    domains: ["newsapi-nxxa.onrender.com", "guncelmanset.com.tr"], // Harici domainleri buraya ekleyin
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "localhost",
-        port: "7045",
-        pathname: "/**",
+        hostname: "newsapi-nxxa.onrender.com", // Harici hostname
+        pathname: "/**", // Tüm yollar
       },
     ],
   },
@@ -27,7 +26,6 @@ const nextConfig = {
       },
     ];
   },
-
   async headers() {
     return [
       {

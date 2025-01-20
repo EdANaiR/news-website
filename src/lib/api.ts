@@ -1,3 +1,5 @@
+const baseUrl = "https://newsapi-nxxa.onrender.com";
+
 export interface AddCategoryDto {
   name: string;
 }
@@ -12,13 +14,16 @@ export interface Category {
 
 export async function getCategories(): Promise<Category[]> {
   try {
-    const response = await fetch("https://localhost:7045/api/Categories", {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      next: { revalidate: 60 }, // 60 saniyede bir api'yi doğrula
-    });
+    const response = await fetch(
+      "https://newsapi-nxxa.onrender.com/api/Categories",
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        next: { revalidate: 60 }, // 60 saniyede bir api'yi doğrula
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -34,12 +39,15 @@ export async function getCategories(): Promise<Category[]> {
 
 export async function getCategory(id: string): Promise<Category> {
   try {
-    const response = await fetch("https://localhost:7045/api/Categories${id}", {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    });
+    const response = await fetch(
+      "https://newsapi-nxxa.onrender.com/api/Categories${id}",
+      {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -61,12 +69,12 @@ export interface NewsSummaryDto {
 }
 export async function getNewsByCategory(
   categoryId: string,
-  page: number = 1,
-  pageSize: number = 10
+  page = 1,
+  pageSize = 10
 ): Promise<NewsSummaryDto[]> {
   try {
     const response = await fetch(
-      `https://localhost:7045/api/News/category/${categoryId}?page=${page}&pageSize=${pageSize}`,
+      `https://newsapi-nxxa.onrender.com/api/News/category/${categoryId}?page=${page}&pageSize=${pageSize}`,
       {
         next: { revalidate: 60 },
       }
@@ -82,7 +90,10 @@ export async function getNewsByCategory(
     }
 
     const data: NewsSummaryDto[] = await response.json();
-    return data;
+    return data.map((item) => ({
+      ...item,
+      imagePath: `${baseUrl}${item.imagePath}`,
+    }));
   } catch (error) {
     console.error("There was a problem fetching the news:", error);
     return defaultNews[categoryId] || [];
@@ -91,14 +102,17 @@ export async function getNewsByCategory(
 
 export async function addCategory(category: AddCategoryDto): Promise<Category> {
   try {
-    const response = await fetch("https://localhost:7045/api/Categories", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(category),
-    });
+    const response = await fetch(
+      "https://newsapi-nxxa.onrender.com/api/Categories",
+      {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(category),
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -158,7 +172,7 @@ export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
       formData.append(`Images`, image);
     });
 
-    const response = await fetch("https://localhost:7045/api/News", {
+    const response = await fetch("https://newsapi-nxxa.onrender.com/api/News", {
       method: "POST",
       body: formData,
     });
@@ -175,7 +189,7 @@ export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
 }
 export async function getNews(): Promise<NewsItem[]> {
   try {
-    const response = await fetch("https://localhost:7045/api/News", {
+    const response = await fetch("https://newsapi-nxxa.onrender.com/api/News", {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -187,7 +201,13 @@ export async function getNews(): Promise<NewsItem[]> {
     }
 
     const data: NewsResponse = await response.json();
-    return data.$values;
+    return data.$values.map((item) => ({
+      ...item,
+      images: item.images.map((image) => ({
+        ...image,
+        imagePath: `${baseUrl}${image.imagePath}`,
+      })),
+    }));
   } catch (error) {
     console.error("Error fetching news:", error);
     throw error;
@@ -201,10 +221,15 @@ export interface CarouselNewsItem {
 }
 
 export async function getCarouselNews(): Promise<CarouselNewsItem[]> {
+  const baseUrl = "https://newsapi-nxxa.onrender.com"; // Backend'inizin base URL'si
+
   try {
-    const response = await fetch(`https://localhost:7045/api/News/carousel`, {
-      next: { revalidate: 60 },
-    });
+    const response = await fetch(
+      `https://newsapi-nxxa.onrender.com/api/News/carousel`,
+      {
+        next: { revalidate: 60 },
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -217,7 +242,7 @@ export async function getCarouselNews(): Promise<CarouselNewsItem[]> {
       return carouselItems.map((item: any) => ({
         newsId: item.newsId.toString(),
         title: item.title,
-        imageUrl: item.imageUrl,
+        imageUrl: `${baseUrl}${item.imageUrl}`, // Tam URL oluşturma
       }));
     }
 
@@ -245,14 +270,20 @@ export async function getNewsDetail(
   newsId: string
 ): Promise<NewsDetailDto | null> {
   try {
-    const response = await fetch(`https://localhost:7045/api/news/${newsId}`, {
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `https://newsapi-nxxa.onrender.com/api/news/${newsId}`,
+      {
+        cache: "no-store",
+      }
+    );
     if (!response.ok) {
       throw new Error(`Failed to fetch news detail: ${response.statusText}`);
     }
     const data = await response.json();
-    return data as NewsDetailDto;
+    return {
+      ...data,
+      imagePaths: data.imagePaths.map((path: string) => `${baseUrl}${path}`),
+    } as NewsDetailDto;
   } catch (error) {
     console.error("Error fetching news detail:", error);
 
@@ -271,7 +302,7 @@ export interface AstrologyNews {
 export async function getAstrologyNews(): Promise<AstrologyNews[]> {
   try {
     const response = await fetch(
-      "https://localhost:7045/api/News/astroloji-news",
+      "https://newsapi-nxxa.onrender.com/api/News/astroloji-news",
       {
         next: { revalidate: 60 },
       }
@@ -292,7 +323,7 @@ export async function getAstrologyNewsDetail(
 ): Promise<NewsDetailDto | null> {
   try {
     const response = await fetch(
-      `https://localhost:7045/api/News/astroloji-news/${newsId}`,
+      `https://newsapi-nxxa.onrender.com/api/News/astroloji-news/${newsId}`,
       {
         cache: "no-store",
       }
@@ -318,7 +349,7 @@ export interface BreakingNews {
 export async function getBreakingNews(): Promise<BreakingNews[]> {
   try {
     const response = await fetch(
-      "https://localhost:7045/api/News/breaking-news",
+      "https://newsapi-nxxa.onrender.com/api/News/breaking-news",
       {
         next: { revalidate: 60 },
       }
@@ -339,7 +370,7 @@ export async function getBreakingNewsDetail(
 ): Promise<NewsDetailDto | null> {
   try {
     const response = await fetch(
-      `https://localhost:7045/api/News/breaking-news/${newsId}`,
+      `https://newsapi-nxxa.onrender.com/api/News/breaking-news/${newsId}`,
       {
         cache: "no-store",
       }

@@ -16,7 +16,7 @@ import {
 } from "@/lib/api";
 import { slugify } from "@/lib/utils";
 
-const API_BASE_URL = "https://localhost:7045";
+const API_BASE_URL = "https://newsapi-nxxa.onrender.com";
 
 const useCarouselNews = () => {
   const [carouselNews, setCarouselNews] =

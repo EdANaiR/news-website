@@ -7,13 +7,17 @@ interface PageProps {
 }
 
 async function getNewsByCategory(categoryId: string) {
-  const response = await fetch(
-    `https://localhost:7045/api/News/category/${categoryId}`
-  );
+  const baseUrl = "https://newsapi-nxxa.onrender.com";
+  const response = await fetch(`${baseUrl}/api/News/category/${categoryId}`);
   if (!response.ok) {
     throw new Error("Failed to fetch news");
   }
-  return response.json();
+  const data = await response.json();
+
+  return data.map((item: any) => ({
+    ...item,
+    imagePath: item.imagePath ? `${baseUrl}${item.imagePath}` : null,
+  }));
 }
 
 export default async function CategoryPage({ params }: PageProps) {
