@@ -3,7 +3,7 @@ const nextConfig = {
   output: "standalone",
   experimental: {
     appDir: true,
-    optimizeCss: true,
+    optimizeCss: false,
   },
   eslint: {
     ignoreDuringBuilds: true,
