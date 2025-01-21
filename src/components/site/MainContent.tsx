@@ -9,29 +9,24 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import {
-  getCarouselNews,
-  CarouselNewsItem,
-  defaultCarouselNews,
-} from "@/lib/api";
+import { getCarouselNews, CarouselNewsItem } from "@/lib/api";
 import { slugify } from "@/lib/utils";
 
-const API_BASE_URL = "https://newsapi-nxxa.onrender.com";
-
 const useCarouselNews = () => {
-  const [carouselNews, setCarouselNews] =
-    useState<CarouselNewsItem[]>(defaultCarouselNews);
+  const [carouselNews, setCarouselNews] = useState<CarouselNewsItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const fetchedCarouselNews = await getCarouselNews();
         setCarouselNews(fetchedCarouselNews);
       } catch (error) {
         console.error("Failed to fetch carousel news:", error);
-        console.warn("Using default carousel news due to API error");
+        setError("Haberler yüklenirken bir hata oluştu.");
       } finally {
         setIsLoading(false);
       }
@@ -40,12 +35,12 @@ const useCarouselNews = () => {
     fetchData();
   }, []);
 
-  return { carouselNews, isLoading };
+  return { carouselNews, isLoading, error };
 };
 
 export const MainContent = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const { carouselNews, isLoading } = useCarouselNews();
+  const { carouselNews, isLoading, error } = useCarouselNews();
 
   useEffect(() => {
     if (carouselNews.length === 0) return;
@@ -70,7 +65,25 @@ export const MainContent = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8">Yükleniyor...</div>;
+    return (
+      <div className="animate-pulse">
+        <div className="w-full h-[400px] bg-gray-200 rounded-lg mb-8"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-red-600 mb-4">{error}</div>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+        >
+          Yeniden Dene
+        </button>
+      </div>
+    );
   }
 
   return (

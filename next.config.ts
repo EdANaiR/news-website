@@ -3,6 +3,7 @@ const nextConfig = {
   output: "standalone",
   experimental: {
     appDir: true,
+    optimizeCss: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
@@ -18,6 +19,11 @@ const nextConfig = {
       },
     ],
   },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production",
+  },
+  optimizeFonts: true,
+  swcMinify: true,
   async rewrites() {
     return [
       {

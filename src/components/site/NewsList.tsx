@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +12,13 @@ import {
   getNewsByCategory,
 } from "@/lib/api";
 import { Clock } from "lucide-react";
+import dynamic from "next/dynamic";
+
+// Reklam komponenti lazy loading ile yüklensin
+const Advertisement = dynamic(() => import("@/components/ui/Advertisement"), {
+  loading: () => <div className="h-32 bg-gray-100 animate-pulse rounded-lg" />,
+  ssr: false,
+});
 
 export default function NewsList() {
   const [categoriesWithNews, setCategoriesWithNews] = useState<
@@ -21,12 +28,14 @@ export default function NewsList() {
     }[]
   >([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     const fetchCategoriesAndNews = async () => {
       try {
         setIsLoading(true);
+        setError(null);
         const categories = await getCategories();
 
         const results = await Promise.all(
@@ -52,6 +61,11 @@ export default function NewsList() {
         }
       } catch (error) {
         console.error("Error fetching data:", error);
+        if (isMounted) {
+          setError(
+            "Haber verileri yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+          );
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -66,27 +80,66 @@ export default function NewsList() {
     };
   }, []);
 
-  if (isLoading) {
-    return <div className="text-center py-4">Yükleniyor...</div>;
-  }
+  // Image URL'lerini memoize et
+  const getImageSrc = useMemo(
+    () => (imagePath: string) => {
+      if (imagePath.startsWith("http") || imagePath.startsWith("https")) {
+        return imagePath;
+      } else if (imagePath.startsWith("/")) {
+        return imagePath;
+      } else {
+        return `https://newsapi-nxxa.onrender.com${imagePath}`;
+      }
+    },
+    []
+  );
 
-  if (categoriesWithNews.length === 0) {
+  if (isLoading) {
     return (
-      <div className="text-center py-4">
-        Hiçbir kategori için haber bulunamadı.
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="animate-pulse">
+            <div className="bg-gray-200 aspect-[16/9] rounded-t-lg" />
+            <div className="p-4 bg-gray-100 rounded-b-lg">
+              <div className="h-6 bg-gray-200 rounded w-3/4 mb-2" />
+              <div className="h-4 bg-gray-200 rounded w-full mb-2" />
+              <div className="h-4 bg-gray-200 rounded w-2/3" />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
 
-  const getImageSrc = (imagePath: string) => {
-    if (imagePath.startsWith("http") || imagePath.startsWith("https")) {
-      return imagePath;
-    } else if (imagePath.startsWith("/")) {
-      return imagePath;
-    } else {
-      return `https://newsapi-nxxa.onrender.com${imagePath}`;
-    }
-  };
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-red-600 mb-4">{error}</div>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+        >
+          Yeniden Dene
+        </button>
+      </div>
+    );
+  }
+
+  if (categoriesWithNews.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-gray-600 mb-4">
+          Şu anda görüntülenecek haber bulunmuyor.
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+        >
+          Yenile
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-12">
@@ -118,6 +171,9 @@ export default function NewsList() {
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-200"
                       priority={index === 0 && newsIndex === 0}
+                      loading={
+                        index === 0 && newsIndex === 0 ? "eager" : "lazy"
+                      }
                     />
                   </div>
                   <CardContent className="p-4 bg-gray-100">
@@ -148,12 +204,9 @@ export default function NewsList() {
             ))}
           </div>
 
-          {/* Reklam Alanı */}
           {index < categoriesWithNews.length - 1 && (
             <div className="mt-12">
-              <div className="bg-gray-100 rounded-lg p-6 text-center">
-                <p className="text-gray-500">Reklam Alanı</p>
-              </div>
+              <Advertisement />
               <Separator className="my-8" />
             </div>
           )}
