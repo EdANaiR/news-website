@@ -189,8 +189,9 @@ export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
     formData.append("publishedDate", newsData.publishedDate);
     formData.append("categoryId", newsData.categoryId);
 
-    newsData.images.forEach((image) => {
-      formData.append(`Images`, image);
+    // Görselleri doğru şekilde ekle
+    newsData.images.forEach((image, index) => {
+      formData.append(`images`, image, image.name);
     });
 
     const response = await fetch(`${baseUrl}/api/News`, {
@@ -199,10 +200,14 @@ export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("API Error Response:", errorText);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log("API Success Response:", result);
+    return result;
   } catch (error) {
     console.error("Error adding news:", error);
     throw error;
