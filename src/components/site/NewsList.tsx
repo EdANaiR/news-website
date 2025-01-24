@@ -14,7 +14,6 @@ import {
 import { Clock } from "lucide-react";
 import dynamic from "next/dynamic";
 
-// Reklam komponenti lazy loading ile yüklensin
 const Advertisement = dynamic(() => import("@/components/ui/Advertisement"), {
   loading: () => <div className="h-32 bg-gray-100 animate-pulse rounded-lg" />,
   ssr: false,
@@ -80,7 +79,6 @@ export default function NewsList() {
     };
   }, []);
 
-  // Image URL'lerini memoize et
   const getImageSrc = useMemo(
     () => (imagePath: string) => {
       if (imagePath.startsWith("http") || imagePath.startsWith("https")) {

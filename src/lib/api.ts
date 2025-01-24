@@ -1,6 +1,5 @@
 const baseUrl = "https://newsapi-nxxa.onrender.com";
 
-// Cache için yardımcı fonksiyon
 const cache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 dakika
 
@@ -189,7 +188,6 @@ export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
     formData.append("publishedDate", newsData.publishedDate);
     formData.append("categoryId", newsData.categoryId);
 
-    // Görselleri doğru şekilde ekle
     newsData.images.forEach((image, index) => {
       formData.append(`images`, image, image.name);
     });
@@ -275,7 +273,6 @@ export async function getCarouselNews(): Promise<CarouselNewsItem[]> {
   }
 }
 
-// Haber detaylarını temsil eden arayüz
 export interface NewsDetailDto {
   newsId: string;
   title: string;

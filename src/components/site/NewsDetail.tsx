@@ -20,49 +20,6 @@ interface NewsDetailProps {
   categoryId?: string;
 }
 
-const defaultRelatedNews: NewsSummaryDto[] = [
-  {
-    newsId: "gundem-1",
-    title: "Cumhurbaşkanı Erdoğan, Yeni Yatırım Projesini Açıkladı",
-    imagePath: "/default23.webp",
-    publishedDate: new Date().toISOString(),
-    shortDescription:
-      "Cumhurbaşkanı Erdoğan, Türkiye'deki istihdamı artırmayı amaçlayan yeni yatırım projelerini duyurdu.",
-  },
-  {
-    newsId: "gundem-2",
-    title: "Türkiye'nin En Büyük Havaalanı İçin Çalışmalar Başladı",
-    imagePath: "/default24.jpg",
-    publishedDate: new Date().toISOString(),
-    shortDescription:
-      "Yeni havaalanı projesi, Türkiye'nin ulaşım altyapısındaki büyük dönüşüm için önemli bir adım.",
-  },
-  {
-    newsId: "gundem-3",
-    title: "İstanbul'da Yeni Deprem Tatbikatı Yapıldı",
-    imagePath: "/default25.jpg",
-    publishedDate: new Date().toISOString(),
-    shortDescription:
-      "İstanbul'da olası bir deprem felaketi için büyük çapta bir tatbikat gerçekleştirildi.",
-  },
-  {
-    newsId: "gundem-4",
-    title: "Yeni Eğitim Yılı İçin Bakanlık'tan Önemli Açıklama",
-    imagePath: "/default26.jpg",
-    publishedDate: new Date().toISOString(),
-    shortDescription:
-      "Milli Eğitim Bakanlığı, yeni eğitim yılının başında alınacak önlemleri duyurdu.",
-  },
-  {
-    newsId: "gundem-5",
-    title: "Bakanlık, Çiftçilere Yeni Destek Paketini Açıkladı",
-    imagePath: "/default27.jpg",
-    publishedDate: new Date().toISOString(),
-    shortDescription:
-      "Tarım ve Orman Bakanlığı, çiftçilere yönelik yeni destek paketini duyurdu.",
-  },
-];
-
 export default function NewsDetail({
   initialData,
   categoryId,
@@ -70,8 +27,7 @@ export default function NewsDetail({
   const [newsItems, setNewsItems] = useState<
     (NewsDetailDto | NewsSummaryDto)[]
   >(Array.isArray(initialData) ? initialData : [initialData]);
-  const [relatedNews, setRelatedNews] =
-    useState<NewsSummaryDto[]>(defaultRelatedNews);
+  const [relatedNews, setRelatedNews] = useState<NewsSummaryDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
@@ -89,7 +45,6 @@ export default function NewsDetail({
       }
     } catch (error) {
       console.error("Error loading related news:", error);
-      // Hata durumunda varsayılan haberleri kullanmaya devam et
     }
   }, [categoryId]);
 
@@ -315,32 +270,34 @@ export default function NewsDetail({
             <p className="text-sm text-muted-foreground">Reklam Alanı</p>
           </Card>
 
-          <Card>
-            <div className="p-4 border-b">
-              <h2 className="font-bold text-xl">İlgili Haberler</h2>
-            </div>
-            <div className="p-3 space-y-6">
-              {relatedNews.map((news) => (
-                <Link
-                  href={`/news/${news.newsId}/${slugify(news.title)}`}
-                  key={news.newsId}
-                  className="block group space-y-3"
-                >
-                  <div className="relative w-full aspect-[16/9]">
-                    <Image
-                      src={getImageSrc(news.imagePath)}
-                      alt={news.title}
-                      fill
-                      className="object-cover rounded-sm"
-                    />
-                  </div>
-                  <h3 className="text-lg font-medium leading-tight group-hover:text-primary transition-colors">
-                    {news.title}
-                  </h3>
-                </Link>
-              ))}
-            </div>
-          </Card>
+          {relatedNews.length > 0 && (
+            <Card>
+              <div className="p-4 border-b">
+                <h2 className="font-bold text-xl">İlgili Haberler</h2>
+              </div>
+              <div className="p-3 space-y-6">
+                {relatedNews.map((news) => (
+                  <Link
+                    href={`/news/${news.newsId}/${slugify(news.title)}`}
+                    key={news.newsId}
+                    className="block group space-y-3"
+                  >
+                    <div className="relative w-full aspect-[16/9]">
+                      <Image
+                        src={getImageSrc(news.imagePath)}
+                        alt={news.title}
+                        fill
+                        className="object-cover rounded-sm"
+                      />
+                    </div>
+                    <h3 className="text-lg font-medium leading-tight group-hover:text-primary transition-colors">
+                      {news.title}
+                    </h3>
+                  </Link>
+                ))}
+              </div>
+            </Card>
+          )}
         </div>
 
         <div className="hidden lg:block lg:w-32 h-[600px] bg-muted flex-shrink-0">
