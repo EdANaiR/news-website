@@ -9,8 +9,6 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body>{children}</body>
-      <Analytics />
-      <SpeedInsights />
     </html>
   );
 }

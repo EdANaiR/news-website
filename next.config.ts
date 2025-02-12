@@ -10,14 +10,14 @@ const nextConfig = {
   },
   reactStrictMode: true,
   images: {
-    domains: ["newsapi-nxxa.onrender.com", "guncelmanset.com.tr"], // Harici domainleri buraya ekleyin
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "newsapi-nxxa.onrender.com", // Harici hostname
-        pathname: "/**", // Tüm yollar
+        hostname: "**",
+        pathname: "**",
       },
     ],
+    unoptimized: true,
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",

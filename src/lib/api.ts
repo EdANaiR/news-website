@@ -102,7 +102,7 @@ export async function getNewsByCategory(
     const data = await fetchWithCache<NewsSummaryDto[]>(
       `${baseUrl}/api/News/category/${categoryId}?page=${page}&pageSize=${pageSize}`,
       {
-        next: { revalidate: 300 }, // 5 dakika cache
+        next: { revalidate: 300 },
       }
     );
 
@@ -110,9 +110,13 @@ export async function getNewsByCategory(
       return [];
     }
 
+    // API yanıtını kontrol etmek için log
+    console.log("API Category News Response:", JSON.stringify(data, null, 2));
+
     return data.map((item) => ({
       ...item,
-      imagePath: `${baseUrl}${item.imagePath}`,
+      // imagePath'i getImageSrc ile düzenliyoruz
+      imagePath: getImageSrc(item.imagePath),
     }));
   } catch (error) {
     console.error("There was a problem fetching the news:", error);
@@ -188,7 +192,15 @@ export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
     formData.append("publishedDate", newsData.publishedDate);
     formData.append("categoryId", newsData.categoryId);
 
+    // Görsel yükleme işlemini kontrol etmek için log
+    console.log("Yüklenen görseller:", newsData.images);
+
     newsData.images.forEach((image, index) => {
+      console.log("Image being appended:", {
+        name: image.name,
+        type: image.type,
+        size: image.size,
+      });
       formData.append(`images`, image, image.name);
     });
 
@@ -204,7 +216,8 @@ export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
     }
 
     const result = await response.json();
-    console.log("API Success Response:", result);
+    // API yanıtını kontrol etmek için log
+    console.log("API Success Response:", JSON.stringify(result, null, 2));
     return result;
   } catch (error) {
     console.error("Error adding news:", error);
@@ -245,6 +258,29 @@ export interface CarouselNewsItem {
   imageUrl: string;
 }
 
+// Görsel URL'sini oluşturan yardımcı fonksiyon
+export function getImageSrc(imagePath: string) {
+  if (!imagePath) return "/placeholder.jpg";
+
+  // Debug için log
+  console.log("Gelen imagePath:", imagePath);
+
+  // Eğer tam URL ise direkt döndür
+  if (imagePath.startsWith("http") || imagePath.startsWith("https")) {
+    return imagePath;
+  }
+
+  // URL'yi temizle ve birleştir
+  const cleanPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
+  const fullUrl = `${baseUrl}${cleanPath}`;
+
+  // Oluşturulan URL'yi kontrol etmek için log
+  console.log("Oluşturulan URL:", fullUrl);
+
+  return fullUrl;
+}
+
+// Carousel haberlerini getir
 export async function getCarouselNews(): Promise<CarouselNewsItem[]> {
   try {
     const response = await fetch(`${baseUrl}/api/News/carousel`, {
@@ -262,7 +298,7 @@ export async function getCarouselNews(): Promise<CarouselNewsItem[]> {
       return carouselItems.map((item: any) => ({
         newsId: item.newsId.toString(),
         title: item.title,
-        imageUrl: `${baseUrl}${item.imageUrl}`,
+        imageUrl: getImageSrc(item.imageUrl),
       }));
     }
 

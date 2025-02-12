@@ -10,6 +10,7 @@ import {
   NewsSummaryDto,
   getNewsByCategory,
   getNewsDetail,
+  getImageSrc,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -96,16 +97,6 @@ export default function NewsDetail({
     }
   }, [inView, loadMoreNews]);
 
-  const getImageSrc = (imagePath: string) => {
-    if (imagePath.startsWith("http") || imagePath.startsWith("https")) {
-      return imagePath;
-    } else if (imagePath.startsWith("/")) {
-      return imagePath;
-    } else {
-      return `https://newsapi-nxxa.onrender.com${imagePath}`;
-    }
-  };
-
   const renderNewsItem = useCallback(
     (item: NewsDetailDto | NewsSummaryDto, index: number) => (
       <div key={`${item.newsId}-${index}`} className="mb-12">
@@ -163,8 +154,13 @@ export default function NewsDetail({
                 src={getImageSrc(item.imagePaths[0])}
                 alt={item.title}
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 className="object-cover rounded-lg"
                 priority={index === 0}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = "/placeholder.png";
+                }}
               />
             </div>
           )}
@@ -175,8 +171,13 @@ export default function NewsDetail({
               src={getImageSrc(item.imagePath)}
               alt={item.title}
               fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-cover rounded-lg"
               priority={index === 0}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = "/placeholder.jpg";
+              }}
             />
           </div>
         )}
@@ -287,6 +288,7 @@ export default function NewsDetail({
                         src={getImageSrc(news.imagePath)}
                         alt={news.title}
                         fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 300px"
                         className="object-cover rounded-sm"
                       />
                     </div>

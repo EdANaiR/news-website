@@ -10,6 +10,7 @@ import {
   NewsSummaryDto,
   getCategories,
   getNewsByCategory,
+  getImageSrc,
 } from "@/lib/api";
 import { Clock } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -78,19 +79,6 @@ export default function NewsList() {
       isMounted = false;
     };
   }, []);
-
-  const getImageSrc = useMemo(
-    () => (imagePath: string) => {
-      if (imagePath.startsWith("http") || imagePath.startsWith("https")) {
-        return imagePath;
-      } else if (imagePath.startsWith("/")) {
-        return imagePath;
-      } else {
-        return `https://newsapi-nxxa.onrender.com${imagePath}`;
-      }
-    },
-    []
-  );
 
   if (isLoading) {
     return (
@@ -172,6 +160,10 @@ export default function NewsList() {
                       loading={
                         index === 0 && newsIndex === 0 ? "eager" : "lazy"
                       }
+                      // Hata durumunda yedek görsel gösterme
+                      onError={(e: any) => {
+                        e.target.src = "/placeholder.png"; // varsayılan bir görsel
+                      }}
                     />
                   </div>
                   <CardContent className="p-4 bg-gray-100">

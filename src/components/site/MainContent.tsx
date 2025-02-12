@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getCarouselNews, CarouselNewsItem } from "@/lib/api";
+import { getCarouselNews, CarouselNewsItem, getImageSrc } from "@/lib/api";
 import { slugify } from "@/lib/utils";
 
 const useCarouselNews = () => {
@@ -125,17 +125,16 @@ export const MainContent = () => {
                         <CardContent className="p-0">
                           <div className="relative w-full h-[400px]">
                             <Image
-                              src={news.imageUrl}
+                              src={getImageSrc(news.imageUrl)}
                               alt={news.title}
                               fill
                               className="object-cover brightness-75"
                               priority={index === currentSlide}
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
-                                target.src = `/api/placeholder?text=${encodeURIComponent(
-                                  news.title
-                                )}`;
+                                target.src = "/placeholder.png";
                               }}
+                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                             />
                             <div className="absolute bottom-8 left-8 right-8 text-white">
                               <h2 className="text-3xl font-bold leading-tight text-shadow-lg">
