@@ -1,4 +1,4 @@
-const baseUrl = "https://newsapi-nxxa.onrender.com";
+const baseUrl = "https://general-gabriella-edaprojects-53fb99e6.koyeb.app";
 
 const cache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 dakika
@@ -127,7 +127,7 @@ export async function getNewsByCategory(
 export async function addCategory(category: AddCategoryDto): Promise<Category> {
   try {
     const response = await fetch(
-      "https://newsapi-nxxa.onrender.com/api/Categories",
+      "https://general-gabriella-edaprojects-53fb99e6.koyeb.app/api/Categories",
       {
         method: "POST",
         headers: {
