@@ -1,4 +1,6 @@
-const baseUrl = "https://general-gabriella-edaprojects-53fb99e6.koyeb.app";
+const baseUrl =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://general-gabriella-edaprojects-53fb99e6.koyeb.app";
 
 const cache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 dakika
