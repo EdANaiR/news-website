@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
 import "@/app/globals.css";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "Güncel Manşet - Son Dakika Haberler, Güncel Haberler",
@@ -20,6 +21,7 @@ export default function RootLayout({
           <Header />
           <main>{children}</main>
           <Footer />
+          <SpeedInsights />
         </div>
       </body>
     </html>
