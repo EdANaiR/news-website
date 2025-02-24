@@ -7,7 +7,7 @@ interface PageProps {
 }
 
 async function getNewsByCategory(categoryId: string) {
-  const baseUrl = "https://newsapi-nxxa.onrender.com";
+  const baseUrl = "https://general-gabriella-edaprojects-53fb99e6.koyeb.app";
   const response = await fetch(`${baseUrl}/api/News/category/${categoryId}`);
   if (!response.ok) {
     throw new Error("Failed to fetch news");

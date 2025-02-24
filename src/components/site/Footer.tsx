@@ -68,7 +68,6 @@ export const Footer = () => {
             <p className="text-sm mb-2">Adres: Ankara</p>
 
             <p className="text-sm mb-2">E-posta: info@guncelmanset.com</p>
-            <p className="text-sm">Whatsapp İhbar: +90 555 123 4567</p>
           </div>
           <div>
             <h3 className="text-xl font-bold mb-4 text-white">
