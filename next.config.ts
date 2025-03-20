@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  skipMiddlewareUrlNormalize: true,
+  skipTrailingSlashRedirect: true,
   experimental: {
     appDir: true,
     optimizeCss: false,
@@ -12,6 +14,7 @@ const nextConfig = {
   // Environment variable'ları ekleyelim
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    MAINTENANCE_MODE: process.env.MAINTENANCE_MODE,
   },
   eslint: {
     ignoreDuringBuilds: true,
