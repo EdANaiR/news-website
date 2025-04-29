@@ -28,7 +28,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "src/components/site",
-    "src/lib/imageLoader.ts"
+    "src/lib/imageLoader.ts",
+    "src/middleware.ts.backup"
   ],
   "exclude": ["node_modules"]
 }
