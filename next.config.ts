@@ -24,11 +24,16 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "**",
+      },
+      {
+        protocol: "https",
         hostname: "**",
         pathname: "**",
       },
     ],
-    unoptimized: true,
+    unoptimized: false, // Cloudinary optimize ettiği için true yapabiliriz
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",

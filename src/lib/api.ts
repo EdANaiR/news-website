@@ -260,25 +260,27 @@ export interface CarouselNewsItem {
   imageUrl: string;
 }
 
-// Görsel URL'sini oluşturan yardımcı fonksiyon
+// Görsel URL'sini oluşturan yardımcı fonksiyon - Cloudinary destekli
 export function getImageSrc(imagePath: string) {
   if (!imagePath) return "/placeholder.jpg";
 
   // Debug için log
   console.log("Gelen imagePath:", imagePath);
 
-  // Eğer tam URL ise direkt döndür
-  if (imagePath.startsWith("http") || imagePath.startsWith("https")) {
+  // Cloudinary URL'si ise direkt döndür
+  if (
+    imagePath.includes("cloudinary.com") ||
+    imagePath.startsWith("http") ||
+    imagePath.startsWith("https")
+  ) {
     return imagePath;
   }
 
-  // URL'yi temizle ve birleştir
+  // Eski backend URL'leri için fallback
   const cleanPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
   const fullUrl = `${baseUrl}${cleanPath}`;
 
-  // Oluşturulan URL'yi kontrol etmek için log
   console.log("Oluşturulan URL:", fullUrl);
-
   return fullUrl;
 }
 
