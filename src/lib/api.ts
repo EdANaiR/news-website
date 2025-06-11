@@ -189,6 +189,17 @@ interface NewsResponse {
 
 export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
   try {
+    console.log("🔄 AddNews API'sine istek gönderiliyor...");
+    console.log("📊 News Data:", {
+      title: newsData.title,
+      shortDescription: newsData.shortDescription,
+      content: newsData.content,
+      keywords: newsData.keywords,
+      publishedDate: newsData.publishedDate,
+      categoryId: newsData.categoryId,
+      imagesCount: newsData.images.length,
+    });
+
     const formData = new FormData();
     formData.append("title", newsData.title);
     formData.append("shortDescription", newsData.shortDescription);
@@ -199,34 +210,60 @@ export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
     formData.append("categoryId", newsData.categoryId);
 
     // Görsel yükleme işlemini kontrol etmek için log
-    console.log("Yüklenen görseller:", newsData.images);
+    console.log("📸 Yüklenen görseller:", newsData.images);
+
+    if (newsData.images.length === 0) {
+      console.warn("⚠️ Hiç görsel seçilmemiş!");
+    }
 
     newsData.images.forEach((image, index) => {
-      console.log("Image being appended:", {
+      console.log(`📸 Image ${index + 1}:`, {
         name: image.name,
         type: image.type,
         size: image.size,
+        lastModified: image.lastModified,
       });
       formData.append(`images`, image, image.name);
     });
+
+    // FormData içeriğini kontrol et
+    console.log("📋 FormData keys:");
+    for (let [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(
+          `  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`
+        );
+      } else {
+        console.log(`  ${key}: ${value}`);
+      }
+    }
+
+    console.log("🌐 API endpoint:", `${baseUrl}/api/News`);
 
     const response = await fetch(`${baseUrl}/api/News`, {
       method: "POST",
       body: formData,
     });
 
+    console.log("📡 API Response Status:", response.status);
+    console.log("📡 API Response Status Text:", response.statusText);
+    console.log(
+      "📡 API Response Headers:",
+      Object.fromEntries(response.headers.entries())
+    );
+
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("API Error Response:", errorText);
-      throw new Error(`HTTP error! status: ${response.status}`);
+      console.error("❌ API Error Response Body:", errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
     // API yanıtını kontrol etmek için log
-    console.log("API Success Response:", JSON.stringify(result, null, 2));
+    console.log("✅ API Success Response:", JSON.stringify(result, null, 2));
     return result;
   } catch (error) {
-    console.error("Error adding news:", error);
+    console.error("❌ Error adding news:", error);
     throw error;
   }
 }

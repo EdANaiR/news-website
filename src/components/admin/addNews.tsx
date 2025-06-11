@@ -64,8 +64,37 @@ export default function AddNewsPage() {
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
+    console.log("📸 Image upload event triggered");
+    console.log("📁 Selected files:", files);
+
     if (files) {
-      setImages((prev) => [...prev, ...Array.from(files)]);
+      const fileArray = Array.from(files);
+      console.log(
+        "📸 Files to upload:",
+        fileArray.map((file, idx) => ({
+          index: idx,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          lastModified: file.lastModified,
+        }))
+      );
+
+      setImages((prev) => {
+        const newImages = [...prev, ...fileArray];
+        console.log(
+          "📸 Updated images state:",
+          newImages.map((img, idx) => ({
+            index: idx,
+            name: img.name,
+            type: img.type,
+            size: img.size,
+          }))
+        );
+        return newImages;
+      });
+    } else {
+      console.warn("⚠️ No files selected");
     }
   };
 
@@ -91,13 +120,40 @@ export default function AddNewsPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    console.log("🚀 Admin form submit başlatıldı...");
+    console.log("📝 Form state:", {
+      title,
+      shortDescription,
+      content,
+      keywords,
+      selectedCategory,
+      date: date.toISOString(),
+      imagesCount: images.length,
+    });
+
+    console.log(
+      "📸 Selected images:",
+      images.map((img, idx) => ({
+        index: idx,
+        name: img.name,
+        type: img.type,
+        size: img.size,
+        lastModified: img.lastModified,
+      }))
+    );
+
     if (!selectedCategory) {
+      console.error("❌ Kategori seçilmemiş!");
       toast({
         variant: "destructive",
         title: "Hata",
         description: "Lütfen bir kategori seçin.",
       });
       return;
+    }
+
+    if (images.length === 0) {
+      console.warn("⚠️ Hiç görsel seçilmemiş!");
     }
 
     const newsData: AddNewsDto = {
@@ -110,8 +166,21 @@ export default function AddNewsPage() {
       images,
     };
 
+    console.log("📦 API'ye gönderilecek data:", {
+      ...newsData,
+      images: newsData.images.map((img, idx) => ({
+        index: idx,
+        name: img.name,
+        type: img.type,
+        size: img.size,
+      })),
+    });
+
     try {
+      setIsLoading(true);
       const result = await addNews(newsData);
+      console.log("✅ Admin form: Haber başarıyla eklendi:", result);
+
       toast({
         title: "Başarılı",
         description: "Haber başarıyla eklendi.",
@@ -125,12 +194,14 @@ export default function AddNewsPage() {
       setSelectedCategory("");
       setDate(new Date());
     } catch (error) {
-      console.error("Error adding news:", error);
+      console.error("❌ Admin form: Haber ekleme hatası:", error);
       toast({
         variant: "destructive",
         title: "Hata",
         description: "Haber eklenirken bir hata oluştu.",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
   return (
