@@ -1,17 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
   skipMiddlewareUrlNormalize: true,
   skipTrailingSlashRedirect: true,
   experimental: {
     appDir: true,
-    optimizeCss: false,
-    // Cache kontrolü için eklenen kısım
-    turboCaching: false,
-    // Data fetch için cache kontrolü
-    fetchCache: false,
+    optimizeCss: true,
+    turboCaching: true,
+    fetchCache: true,
   },
-  // Environment variable'ları ekleyelim
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     MAINTENANCE_MODE: process.env.MAINTENANCE_MODE,
@@ -29,19 +25,22 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "general-gabriella-edaprojects-53fb99e6.koyeb.app",
+        pathname: "**",
+      },
+      {
+        protocol: "https",
         hostname: "**",
         pathname: "**",
       },
     ],
-    unoptimized: false, // Cloudinary optimize ettiği için true yapabiliriz
+    unoptimized: false,
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
   optimizeFonts: true,
   swcMinify: true,
-  // Cache kontrolü için eklenen kısım
-  cache: false,
   async rewrites() {
     return [
       {
@@ -59,18 +58,18 @@ const nextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
           },
-          // Cache kontrolü için eklenen headers
           {
             key: "Cache-Control",
-            value: "no-store, no-cache, must-revalidate, proxy-revalidate",
+            value: "public, max-age=3600, s-maxage=86400",
           },
+        ],
+      },
+      {
+        source: "/_next/static/:path*",
+        headers: [
           {
-            key: "Pragma",
-            value: "no-cache",
-          },
-          {
-            key: "Expires",
-            value: "0",
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
           },
         ],
       },
@@ -78,7 +77,6 @@ const nextConfig = {
   },
 };
 
-// Environment variable kontrolü ekleyelim
 if (!process.env.NEXT_PUBLIC_API_URL) {
   console.warn(
     "Warning: NEXT_PUBLIC_API_URL is not defined in environment variables"

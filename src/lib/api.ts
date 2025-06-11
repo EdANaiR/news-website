@@ -93,6 +93,7 @@ export interface NewsSummaryDto {
   imagePath: string;
   publishedDate: string;
   shortDescription: string;
+  keywords: string[];
 }
 
 export async function getNewsByCategory(
@@ -119,6 +120,9 @@ export async function getNewsByCategory(
       ...item,
       // imagePath'i getImageSrc ile düzenliyoruz
       imagePath: getImageSrc(item.imagePath),
+      // Keywords null ise boş array yap
+      keywords:
+        item.keywords && Array.isArray(item.keywords) ? item.keywords : [],
     }));
   } catch (error) {
     console.error("There was a problem fetching the news:", error);
@@ -243,10 +247,14 @@ export async function getNews(): Promise<NewsItem[]> {
     const data: NewsResponse = await response.json();
     return data.$values.map((item) => ({
       ...item,
-      images: item.images.map((image) => ({
-        ...image,
-        imagePath: `${baseUrl}${image.imagePath}`,
-      })),
+      // Keywords null ise boş array yap
+      keywords:
+        item.keywords && Array.isArray(item.keywords) ? item.keywords : [],
+      images:
+        item.images?.map((image) => ({
+          ...image,
+          imagePath: `${baseUrl}${image.imagePath}`,
+        })) || [],
     }));
   } catch (error) {
     console.error("Error fetching news:", error);
@@ -284,31 +292,125 @@ export function getImageSrc(imagePath: string) {
   return fullUrl;
 }
 
-// Carousel haberlerini getir
+// Carousel haberlerini getir - fallback ile
 export async function getCarouselNews(): Promise<CarouselNewsItem[]> {
   try {
+    console.log(
+      "🔄 Carousel news API'sine istek gönderiliyor:",
+      `${baseUrl}/api/News/carousel`
+    );
+
     const response = await fetch(`${baseUrl}/api/News/carousel`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
       next: { revalidate: 300 },
     });
 
+    console.log("📡 API Response Status:", response.status);
+    console.log("📡 API Response Status Text:", response.statusText);
+    console.log(
+      "📡 API Response Headers:",
+      Object.fromEntries(response.headers.entries())
+    );
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Hata detaylarını almaya çalışalım
+      let errorText = "";
+      try {
+        errorText = await response.text();
+        console.error("❌ API Error Response Body:", errorText);
+      } catch (e) {
+        console.error("❌ Hata response body okunamadı:", e);
+      }
+
+      // Eğer carousel endpoint yoksa, fallback olarak normal news'den çekelim
+      if (response.status === 404 || response.status === 500) {
+        console.warn(
+          "⚠️ Carousel endpoint bulunamadı, fallback'e geçiliyor..."
+        );
+        return await getCarouselNewsFallback();
+      }
+
+      throw new Error(
+        `HTTP error! status: ${response.status}, message: ${errorText}`
+      );
     }
 
     const data = await response.json();
+    console.log("✅ API Response Data:", JSON.stringify(data, null, 2));
+
     const carouselItems = data?.$values ?? data;
 
     if (Array.isArray(carouselItems) && carouselItems.length > 0) {
-      return carouselItems.map((item: any) => ({
+      const processedItems = carouselItems.map((item: any) => ({
         newsId: item.newsId.toString(),
         title: item.title,
         imageUrl: getImageSrc(item.imageUrl),
       }));
+
+      console.log("✅ Processed carousel items:", processedItems);
+      return processedItems;
     }
 
-    throw new Error("Invalid or empty carousel data");
+    console.warn("⚠️ Carousel data boş veya geçersiz:", carouselItems);
+    // Fallback'e geç
+    return await getCarouselNewsFallback();
   } catch (error) {
-    console.error("Error fetching carousel news:", error);
+    console.error("❌ Error fetching carousel news:", error);
+    // Son çare olarak fallback dene
+    try {
+      console.log("🔄 Fallback carousel news deneniyor...");
+      return await getCarouselNewsFallback();
+    } catch (fallbackError) {
+      console.error("❌ Fallback de başarısız oldu:", fallbackError);
+      throw error; // Orijinal hatayı fırlat
+    }
+  }
+}
+
+// Fallback carousel news fonksiyonu
+async function getCarouselNewsFallback(): Promise<CarouselNewsItem[]> {
+  try {
+    console.log(
+      "🔄 Fallback: Normal news API'den carousel verisi çekiliyor..."
+    );
+
+    // Normal news endpoint'ini dene
+    const response = await fetch(`${baseUrl}/api/News`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Fallback failed! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const newsItems = data?.$values ?? data;
+
+    if (Array.isArray(newsItems) && newsItems.length > 0) {
+      // İlk 5 haberi carousel için kullan
+      const carouselItems = newsItems.slice(0, 5).map((item: any) => ({
+        newsId: item.newsId?.toString() || item.id?.toString(),
+        title: item.title,
+        imageUrl: getImageSrc(
+          item.imagePath || item.images?.[0]?.imagePath || ""
+        ),
+      }));
+
+      console.log("✅ Fallback carousel items oluşturuldu:", carouselItems);
+      return carouselItems;
+    }
+
+    throw new Error("Fallback'te de veri bulunamadı");
+  } catch (error) {
+    console.error("❌ Fallback carousel news hatası:", error);
     throw error;
   }
 }
@@ -328,19 +430,69 @@ export async function getNewsDetail(
   newsId: string
 ): Promise<NewsDetailDto | null> {
   try {
+    console.log(
+      "🔄 News detail API'sine istek gönderiliyor:",
+      `${baseUrl}/api/news/${newsId}`
+    );
+
     const response = await fetch(`${baseUrl}/api/news/${newsId}`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
       cache: "no-store",
     });
+
+    console.log("📡 News Detail API Response Status:", response.status);
+    console.log(
+      "📡 News Detail API Response Status Text:",
+      response.statusText
+    );
+    console.log(
+      "📡 News Detail API Response Headers:",
+      Object.fromEntries(response.headers.entries())
+    );
+
     if (!response.ok) {
-      throw new Error(`Failed to fetch news detail: ${response.statusText}`);
+      // Hata detaylarını almaya çalışalım
+      let errorText = "";
+      try {
+        errorText = await response.text();
+        console.error("❌ News Detail API Error Response Body:", errorText);
+      } catch (e) {
+        console.error("❌ News Detail hata response body okunamadı:", e);
+      }
+
+      if (response.status === 404) {
+        console.warn("⚠️ News detail bulunamadı (404), null dönülüyor");
+        return null;
+      }
+
+      throw new Error(
+        `Failed to fetch news detail: ${response.status} - ${errorText}`
+      );
     }
+
     const data = await response.json();
-    return {
+    console.log(
+      "✅ News Detail API Response Data:",
+      JSON.stringify(data, null, 2)
+    );
+
+    const processedData = {
       ...data,
-      imagePaths: data.imagePaths.map((path: string) => `${baseUrl}${path}`),
+      imagePaths:
+        data.imagePaths?.map((path: string) => getImageSrc(path)) || [],
+      // Keywords null ise boş array yap
+      keywords:
+        data.keywords && Array.isArray(data.keywords) ? data.keywords : [],
     } as NewsDetailDto;
+
+    console.log("✅ Processed News Detail:", processedData);
+    return processedData;
   } catch (error) {
-    console.error("Error fetching news detail:", error);
+    console.error("❌ Error fetching news detail:", error);
     throw error;
   }
 }

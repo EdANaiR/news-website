@@ -215,22 +215,25 @@ export default function NewsDetail({
           />
         )}
 
-        {"keywords" in item && (
-          <>
-            <div className="text-gray-700">Etiketler</div>
-            <div className="flex flex-wrap gap-2 mb-6">
-              {item.keywords.map((keyword, keywordIndex) => (
-                <div
-                  key={`${item.newsId}-${keyword}-${keywordIndex}`}
-                  className="py-1 px-2 bg-muted text-sm rounded"
-                >
-                  <span className="text-red-600"></span>
-                  {keyword}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+        {"keywords" in item &&
+          item.keywords &&
+          Array.isArray(item.keywords) &&
+          item.keywords.length > 0 && (
+            <>
+              <div className="text-gray-700">Etiketler</div>
+              <div className="flex flex-wrap gap-2 mb-6">
+                {item.keywords.map((keyword, keywordIndex) => (
+                  <div
+                    key={`${item.newsId}-${keyword}-${keywordIndex}`}
+                    className="py-1 px-2 bg-muted text-sm rounded"
+                  >
+                    <span className="text-red-600"></span>
+                    {keyword}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
         {index < newsItems.length - 1 && (
           <div className="w-full h-24 bg-muted my-8 flex items-center justify-center">
