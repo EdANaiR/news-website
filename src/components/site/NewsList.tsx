@@ -29,6 +29,8 @@ export default function NewsList() {
   >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
 
   useEffect(() => {
     let isMounted = true;
@@ -57,14 +59,30 @@ export default function NewsList() {
           const categoriesWithNewsFiltered = results.filter(
             (item) => item.news.length > 0
           );
+
+          if (
+            categoriesWithNewsFiltered.length === 0 &&
+            retryCount < maxRetries
+          ) {
+            setRetryCount((prev) => prev + 1);
+            setTimeout(fetchCategoriesAndNews, Math.pow(2, retryCount) * 1000);
+            return;
+          }
+
           setCategoriesWithNews(categoriesWithNewsFiltered);
+          setRetryCount(0);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
         if (isMounted) {
-          setError(
-            "Haber verileri yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin."
-          );
+          if (retryCount < maxRetries) {
+            setRetryCount((prev) => prev + 1);
+            setTimeout(fetchCategoriesAndNews, Math.pow(2, retryCount) * 1000);
+          } else {
+            setError(
+              "Haber verileri yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin veya daha sonra tekrar deneyin."
+            );
+          }
         }
       } finally {
         if (isMounted) {
@@ -78,7 +96,7 @@ export default function NewsList() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [retryCount]);
 
   if (isLoading) {
     return (
@@ -100,10 +118,13 @@ export default function NewsList() {
   if (error) {
     return (
       <div className="text-center py-8">
-        <div className="text-red-600 mb-4">{error}</div>
+        <p className="text-red-500 mb-4">{error}</p>
         <button
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+          onClick={() => {
+            setRetryCount(0);
+            setIsLoading(true);
+          }}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
         >
           Yeniden Dene
         </button>

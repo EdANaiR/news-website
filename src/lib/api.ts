@@ -101,33 +101,45 @@ export async function getNewsByCategory(
   page = 1,
   pageSize = 10
 ): Promise<NewsSummaryDto[]> {
-  try {
-    const data = await fetchWithCache<NewsSummaryDto[]>(
-      `${baseUrl}/api/News/category/${categoryId}?page=${page}&pageSize=${pageSize}`,
-      {
-        next: { revalidate: 300 },
+  const maxRetries = 3;
+  let retryCount = 0;
+
+  while (retryCount < maxRetries) {
+    try {
+      const data = await fetchWithCache<NewsSummaryDto[]>(
+        `${baseUrl}/api/News/category/${categoryId}?page=${page}&pageSize=${pageSize}`,
+        {
+          next: { revalidate: 300 },
+        }
+      );
+
+      if (!data || data.length === 0) {
+        return [];
       }
-    );
 
-    if (!data || data.length === 0) {
-      return [];
+      return data.map((item) => ({
+        ...item,
+        imagePath: getImageSrc(item.imagePath),
+        keywords:
+          item.keywords && Array.isArray(item.keywords) ? item.keywords : [],
+      }));
+    } catch (error) {
+      retryCount++;
+      console.error(`Attempt ${retryCount} failed:`, error);
+
+      if (retryCount === maxRetries) {
+        console.error("All retry attempts failed for category:", categoryId);
+        return [];
+      }
+
+      // Exponential backoff
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.pow(2, retryCount) * 1000)
+      );
     }
-
-    // API yanıtını kontrol etmek için log
-    console.log("API Category News Response:", JSON.stringify(data, null, 2));
-
-    return data.map((item) => ({
-      ...item,
-      // imagePath'i getImageSrc ile düzenliyoruz
-      imagePath: getImageSrc(item.imagePath),
-      // Keywords null ise boş array yap
-      keywords:
-        item.keywords && Array.isArray(item.keywords) ? item.keywords : [],
-    }));
-  } catch (error) {
-    console.error("There was a problem fetching the news:", error);
-    return [];
   }
+
+  return [];
 }
 
 export async function addCategory(category: AddCategoryDto): Promise<Category> {
