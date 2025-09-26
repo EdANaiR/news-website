@@ -12,6 +12,7 @@ import {
   getNewsDetail,
   getImageSrc,
 } from "@/lib/api";
+import Advertisement from "@/components/ui/Advertisement";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { slugify } from "@/lib/utils";
@@ -236,8 +237,8 @@ export default function NewsDetail({
           )}
 
         {index < newsItems.length - 1 && (
-          <div className="w-full h-24 bg-muted my-8 flex items-center justify-center">
-            <p className="text-sm text-muted-foreground">Reklam Alanı</p>
+          <div className="w-full h-24 my-8 flex items-center justify-center">
+            <Advertisement />
           </div>
         )}
       </div>
@@ -247,16 +248,14 @@ export default function NewsDetail({
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="w-full h-24 bg-muted mb-6 flex items-center justify-center">
-        <p className="text-sm text-muted-foreground">Reklam Alanı</p>
+      <div className="w-full h-24 my-8 flex items-center justify-center">
+        <Advertisement />
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="hidden lg:block lg:w-32 h-[600px] bg-muted flex-shrink-0">
-          <div className="h-full flex items-center justify-center">
-            <p className="text-sm text-muted-foreground rotate-90">
-              Reklam Alanı
-            </p>
+          <div className="w-full h-24 my-8 flex items-center justify-center">
+            <Advertisement />
           </div>
         </div>
 
@@ -271,7 +270,9 @@ export default function NewsDetail({
 
         <div className="lg:w-64 space-y-6 flex-shrink-0">
           <Card className="w-full h-60 flex items-center justify-center">
-            <p className="text-sm text-muted-foreground">Reklam Alanı</p>
+            <div className="w-full h-24 my-8 flex items-center justify-center">
+              <Advertisement />
+            </div>
           </Card>
 
           {relatedNews.length > 0 && (
@@ -307,9 +308,9 @@ export default function NewsDetail({
 
         <div className="hidden lg:block lg:w-32 h-[600px] bg-muted flex-shrink-0">
           <div className="h-full flex items-center justify-center">
-            <p className="text-sm text-muted-foreground rotate-90">
-              Reklam Alanı
-            </p>
+            <div className="w-full h-24 my-8 flex items-center justify-center">
+              <Advertisement />
+            </div>
           </div>
         </div>
       </div>
