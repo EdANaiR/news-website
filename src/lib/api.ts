@@ -2,52 +2,74 @@ const baseUrl =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://general-gabriella-edaprojects-53fb99e6.koyeb.app";
 
-const cache = new Map();
+// Memory-based cache instead of localStorage (SSR safe)
+const memoryCache = new Map();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 dakika
 
 function getCacheKey(url: string): string {
   return `${url}`;
 }
 
+// Optimized fetch with better error handling
 async function fetchWithCache<T>(
   url: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  useCache: boolean = true
 ): Promise<T> {
   const cacheKey = getCacheKey(url);
-  const cachedData = cache.get(cacheKey);
 
-  if (cachedData && Date.now() - cachedData.timestamp < CACHE_DURATION) {
-    return cachedData.data;
+  if (useCache) {
+    const cachedData = memoryCache.get(cacheKey);
+    if (cachedData && Date.now() - cachedData.timestamp < CACHE_DURATION) {
+      return cachedData.data;
+    }
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  // AbortController for request timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 saniye timeout
 
-  // 404 durumunda boş array dön
-  if (response.status === 404) {
-    return [] as T;
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
+
+    clearTimeout(timeoutId);
+
+    // 404 durumunda boş array dön
+    if (response.status === 404) {
+      return [] as T;
+    }
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (useCache) {
+      memoryCache.set(cacheKey, { data, timestamp: Date.now() });
+    }
+
+    return data;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("Request timeout");
+    }
+    throw error;
   }
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  const data = await response.json();
-  cache.set(cacheKey, { data, timestamp: Date.now() });
-  return data;
 }
 
 export interface AddCategoryDto {
   name: string;
 }
-
-// api.ts
 
 export interface Category {
   categoryId: string;
@@ -55,32 +77,23 @@ export interface Category {
   newsArticles: any | null;
 }
 
+// Optimized categories fetch
 export async function getCategories(): Promise<Category[]> {
   try {
-    const data = await fetchWithCache<Category[]>(`${baseUrl}/api/Categories`, {
-      next: { revalidate: 300 }, // 5 dakika cache
-    });
-    return data;
+    const data = await fetchWithCache<Category[]>(`${baseUrl}/api/Categories`);
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Error fetching categories:", error);
-    throw error;
+    return []; // Fallback to empty array instead of throwing
   }
 }
 
 export async function getCategory(id: string): Promise<Category> {
   try {
-    const response = await fetch(`${baseUrl}/api/Categories/${id}`, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
+    const data = await fetchWithCache<Category>(
+      `${baseUrl}/api/Categories/${id}`
+    );
+    return data;
   } catch (error) {
     console.error("Error fetching category:", error);
     throw error;
@@ -96,65 +109,62 @@ export interface NewsSummaryDto {
   keywords: string[];
 }
 
+// Heavily optimized getNewsByCategory
 export async function getNewsByCategory(
   categoryId: string,
   page = 1,
-  pageSize = 10
+  pageSize = 10,
+  signal?: AbortSignal
 ): Promise<NewsSummaryDto[]> {
-  const maxRetries = 3;
-  let retryCount = 0;
-
-  while (retryCount < maxRetries) {
-    try {
-      const data = await fetchWithCache<NewsSummaryDto[]>(
-        `${baseUrl}/api/News/category/${categoryId}?page=${page}&pageSize=${pageSize}`,
-        {
-          next: { revalidate: 300 },
-        }
-      );
-
-      if (!data || data.length === 0) {
-        return [];
-      }
-
-      return data.map((item) => ({
-        ...item,
-        imagePath: getImageSrc(item.imagePath),
-        keywords:
-          item.keywords && Array.isArray(item.keywords) ? item.keywords : [],
-      }));
-    } catch (error) {
-      retryCount++;
-      console.error(`Attempt ${retryCount} failed:`, error);
-
-      if (retryCount === maxRetries) {
-        console.error("All retry attempts failed for category:", categoryId);
-        return [];
-      }
-
-      // Exponential backoff
-      await new Promise((resolve) =>
-        setTimeout(resolve, Math.pow(2, retryCount) * 1000)
-      );
-    }
+  // Early validation
+  if (!categoryId || typeof categoryId !== "string") {
+    console.error("Invalid categoryId:", categoryId);
+    return [];
   }
 
-  return [];
+  try {
+    const url = `${baseUrl}/api/News/category/${categoryId}?page=${page}&pageSize=${pageSize}`;
+
+    const options: RequestInit = {};
+    if (signal) {
+      options.signal = signal;
+    }
+
+    const data = await fetchWithCache<NewsSummaryDto[]>(url, options);
+
+    if (!Array.isArray(data)) {
+      console.warn(`Invalid data format for category ${categoryId}:`, data);
+      return [];
+    }
+
+    if (data.length === 0) {
+      return [];
+    }
+
+    // Process data with optimized image handling
+    const processedData = data.map((item) => ({
+      ...item,
+      imagePath: getImageSrc(item.imagePath),
+      keywords: Array.isArray(item.keywords) ? item.keywords : [],
+    }));
+
+    return processedData;
+  } catch (error) {
+    console.error(`Error fetching news for category ${categoryId}:`, error);
+    return []; // Return empty array instead of throwing
+  }
 }
 
 export async function addCategory(category: AddCategoryDto): Promise<Category> {
   try {
-    const response = await fetch(
-      "https://general-gabriella-edaprojects-53fb99e6.koyeb.app/api/Categories",
-      {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(category),
-      }
-    );
+    const response = await fetch(`${baseUrl}/api/Categories`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(category),
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -221,7 +231,6 @@ export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
     formData.append("publishedDate", newsData.publishedDate);
     formData.append("categoryId", newsData.categoryId);
 
-    // Görsel yükleme işlemini kontrol etmek için log
     console.log("📸 Yüklenen görseller:", newsData.images);
 
     if (newsData.images.length === 0) {
@@ -238,7 +247,6 @@ export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
       formData.append(`images`, image, image.name);
     });
 
-    // FormData içeriğini kontrol et
     console.log("📋 FormData keys:");
     for (let [key, value] of formData.entries()) {
       if (value instanceof File) {
@@ -271,7 +279,6 @@ export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
     }
 
     const result = await response.json();
-    // API yanıtını kontrol etmek için log
     console.log("✅ API Success Response:", JSON.stringify(result, null, 2));
     return result;
   } catch (error) {
@@ -282,23 +289,17 @@ export async function addNews(newsData: AddNewsDto): Promise<NewsItem> {
 
 export async function getNews(): Promise<NewsItem[]> {
   try {
-    const response = await fetch(`${baseUrl}/api/News`, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    });
+    const data = await fetchWithCache<NewsResponse>(`${baseUrl}/api/News`);
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    const newsItems = data?.$values || data;
+
+    if (!Array.isArray(newsItems)) {
+      return [];
     }
 
-    const data: NewsResponse = await response.json();
-    return data.$values.map((item) => ({
+    return newsItems.map((item) => ({
       ...item,
-      // Keywords null ise boş array yap
-      keywords:
-        item.keywords && Array.isArray(item.keywords) ? item.keywords : [],
+      keywords: Array.isArray(item.keywords) ? item.keywords : [],
       images:
         item.images?.map((image) => ({
           ...image,
@@ -307,7 +308,7 @@ export async function getNews(): Promise<NewsItem[]> {
     }));
   } catch (error) {
     console.error("Error fetching news:", error);
-    throw error;
+    return [];
   }
 }
 
@@ -317,9 +318,11 @@ export interface CarouselNewsItem {
   imageUrl: string;
 }
 
-// Görsel URL'sini oluşturan yardımcı fonksiyon - Cloudinary destekli
-export function getImageSrc(imagePath: string) {
-  if (!imagePath) return "/placeholder.jpg";
+// Optimized image source function with fallback chain
+export function getImageSrc(imagePath: string): string {
+  if (!imagePath || typeof imagePath !== "string") {
+    return "/placeholder.jpg";
+  }
 
   // Debug için log
   console.log("Gelen imagePath:", imagePath);
@@ -341,7 +344,7 @@ export function getImageSrc(imagePath: string) {
   return fullUrl;
 }
 
-// Carousel haberlerini getir - fallback ile
+// Optimized carousel news with timeout and fallback
 export async function getCarouselNews(): Promise<CarouselNewsItem[]> {
   try {
     console.log(
@@ -349,14 +352,19 @@ export async function getCarouselNews(): Promise<CarouselNewsItem[]> {
       `${baseUrl}/api/News/carousel`
     );
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 saniye timeout
+
     const response = await fetch(`${baseUrl}/api/News/carousel`, {
       method: "GET",
+      signal: controller.signal,
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      next: { revalidate: 300 },
     });
+
+    clearTimeout(timeoutId);
 
     console.log("📡 API Response Status:", response.status);
     console.log("📡 API Response Status Text:", response.statusText);
@@ -366,7 +374,6 @@ export async function getCarouselNews(): Promise<CarouselNewsItem[]> {
     );
 
     if (!response.ok) {
-      // Hata detaylarını almaya çalışalım
       let errorText = "";
       try {
         errorText = await response.text();
@@ -395,9 +402,9 @@ export async function getCarouselNews(): Promise<CarouselNewsItem[]> {
 
     if (Array.isArray(carouselItems) && carouselItems.length > 0) {
       const processedItems = carouselItems.map((item: any) => ({
-        newsId: item.newsId.toString(),
-        title: item.title,
-        imageUrl: getImageSrc(item.imageUrl),
+        newsId: item.newsId?.toString() || "",
+        title: item.title || "",
+        imageUrl: getImageSrc(item.imageUrl || item.imagePath || ""),
       }));
 
       console.log("✅ Processed carousel items:", processedItems);
@@ -415,26 +422,32 @@ export async function getCarouselNews(): Promise<CarouselNewsItem[]> {
       return await getCarouselNewsFallback();
     } catch (fallbackError) {
       console.error("❌ Fallback de başarısız oldu:", fallbackError);
-      throw error; // Orijinal hatayı fırlat
+      return []; // Empty array instead of throwing
     }
   }
 }
 
-// Fallback carousel news fonksiyonu
+// Optimized fallback function
 async function getCarouselNewsFallback(): Promise<CarouselNewsItem[]> {
   try {
     console.log(
       "🔄 Fallback: Normal news API'den carousel verisi çekiliyor..."
     );
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     // Normal news endpoint'ini dene
-    const response = await fetch(`${baseUrl}/api/News`, {
+    const response = await fetch(`${baseUrl}/api/News?pageSize=5`, {
       method: "GET",
+      signal: controller.signal,
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`Fallback failed! status: ${response.status}`);
@@ -446,8 +459,8 @@ async function getCarouselNewsFallback(): Promise<CarouselNewsItem[]> {
     if (Array.isArray(newsItems) && newsItems.length > 0) {
       // İlk 5 haberi carousel için kullan
       const carouselItems = newsItems.slice(0, 5).map((item: any) => ({
-        newsId: item.newsId?.toString() || item.id?.toString(),
-        title: item.title,
+        newsId: item.newsId?.toString() || item.id?.toString() || "",
+        title: item.title || "",
         imageUrl: getImageSrc(
           item.imagePath || item.images?.[0]?.imagePath || ""
         ),
@@ -457,10 +470,10 @@ async function getCarouselNewsFallback(): Promise<CarouselNewsItem[]> {
       return carouselItems;
     }
 
-    throw new Error("Fallback'te de veri bulunamadı");
+    return [];
   } catch (error) {
     console.error("❌ Fallback carousel news hatası:", error);
-    throw error;
+    return [];
   }
 }
 
@@ -479,51 +492,26 @@ export async function getNewsDetail(
   newsId: string
 ): Promise<NewsDetailDto | null> {
   try {
+    if (!newsId) {
+      console.error("News ID is required");
+      return null;
+    }
+
     console.log(
       "🔄 News detail API'sine istek gönderiliyor:",
       `${baseUrl}/api/news/${newsId}`
     );
 
-    const response = await fetch(`${baseUrl}/api/news/${newsId}`, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-    });
-
-    console.log("📡 News Detail API Response Status:", response.status);
-    console.log(
-      "📡 News Detail API Response Status Text:",
-      response.statusText
-    );
-    console.log(
-      "📡 News Detail API Response Headers:",
-      Object.fromEntries(response.headers.entries())
+    const data = await fetchWithCache<NewsDetailDto>(
+      `${baseUrl}/api/news/${newsId}`,
+      { cache: "no-store" },
+      false // Don't use cache for news details
     );
 
-    if (!response.ok) {
-      // Hata detaylarını almaya çalışalım
-      let errorText = "";
-      try {
-        errorText = await response.text();
-        console.error("❌ News Detail API Error Response Body:", errorText);
-      } catch (e) {
-        console.error("❌ News Detail hata response body okunamadı:", e);
-      }
-
-      if (response.status === 404) {
-        console.warn("⚠️ News detail bulunamadı (404), null dönülüyor");
-        return null;
-      }
-
-      throw new Error(
-        `Failed to fetch news detail: ${response.status} - ${errorText}`
-      );
+    if (!data) {
+      return null;
     }
 
-    const data = await response.json();
     console.log(
       "✅ News Detail API Response Data:",
       JSON.stringify(data, null, 2)
@@ -533,15 +521,21 @@ export async function getNewsDetail(
       ...data,
       imagePaths:
         data.imagePaths?.map((path: string) => getImageSrc(path)) || [],
-      // Keywords null ise boş array yap
-      keywords:
-        data.keywords && Array.isArray(data.keywords) ? data.keywords : [],
-    } as NewsDetailDto;
+      keywords: Array.isArray(data.keywords) ? data.keywords : [],
+    };
 
     console.log("✅ Processed News Detail:", processedData);
     return processedData;
   } catch (error) {
     console.error("❌ Error fetching news detail:", error);
+    if (
+      error instanceof Error &&
+      error.message &&
+      error.message.includes("404")
+    ) {
+      console.warn("⚠️ News detail bulunamadı (404), null dönülüyor");
+      return null;
+    }
     throw error;
   }
 }
@@ -554,20 +548,13 @@ export interface AstrologyNews {
 
 export async function getAstrologyNews(): Promise<AstrologyNews[]> {
   try {
-    const response = await fetch(`${baseUrl}/api/News/astroloji-news`, {
-      next: { revalidate: 300 },
-    });
-    if (!response.ok) {
-      throw new Error("Failed to fetch astrology news");
-    }
-    const data = await response.json();
-    if (!Array.isArray(data)) {
-      throw new Error("Invalid astrology news data format");
-    }
-    return data;
+    const data = await fetchWithCache<AstrologyNews[]>(
+      `${baseUrl}/api/News/astroloji-news`
+    );
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Error fetching astrology news:", error);
-    throw error;
+    return [];
   }
 }
 
@@ -575,22 +562,18 @@ export async function getAstrologyNewsDetail(
   newsId: string
 ): Promise<NewsDetailDto | null> {
   try {
-    const response = await fetch(
+    if (!newsId) return null;
+
+    const data = await fetchWithCache<NewsDetailDto>(
       `${baseUrl}/api/News/astroloji-news/${newsId}`,
-      {
-        cache: "no-store",
-      }
+      { cache: "no-store" },
+      false
     );
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch astrology news detail: ${response.statusText}`
-      );
-    }
-    const data = await response.json();
-    return data as NewsDetailDto;
+
+    return data || null;
   } catch (error) {
     console.error("Error fetching astrology news detail:", error);
-    throw error;
+    return null;
   }
 }
 
@@ -601,20 +584,13 @@ export interface BreakingNews {
 
 export async function getBreakingNews(): Promise<BreakingNews[]> {
   try {
-    const response = await fetch(`${baseUrl}/api/News/breaking-news`, {
-      next: { revalidate: 300 },
-    });
-    if (!response.ok) {
-      throw new Error("Failed to fetch breaking news");
-    }
-    const data = await response.json();
-    if (!Array.isArray(data)) {
-      throw new Error("Invalid breaking news data format");
-    }
-    return data;
+    const data = await fetchWithCache<BreakingNews[]>(
+      `${baseUrl}/api/News/breaking-news`
+    );
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error("Error fetching breaking news:", error);
-    throw error;
+    return [];
   }
 }
 
@@ -622,21 +598,17 @@ export async function getBreakingNewsDetail(
   newsId: string
 ): Promise<NewsDetailDto | null> {
   try {
-    const response = await fetch(
+    if (!newsId) return null;
+
+    const data = await fetchWithCache<BreakingNews>(
       `${baseUrl}/api/News/breaking-news/${newsId}`,
-      {
-        cache: "no-store",
-      }
+      { cache: "no-store" },
+      false
     );
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch breaking news detail: ${response.statusText}`
-      );
-    }
-    const data = await response.json();
-    return data as NewsDetailDto;
+
+    return (data as NewsDetailDto) || null;
   } catch (error) {
     console.error("Error fetching breaking news detail:", error);
-    throw error;
+    return null;
   }
 }
